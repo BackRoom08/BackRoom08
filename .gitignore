@@ -86,9 +86,9 @@ crashlytics-build.properties
 /[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers.meta
 
 # 공유되면 안되는 어셋스토어 어셋들
-/[As]ssets/Ignore/*
-/[As]ssets/Ignore.meta
-Assets/Ignore
-Assets/Ignore.meta
+/[As]ssets/Plugins/*
+/[As]ssets/Plugins.meta
+Assets/Plugins
+Assets/Plugins.meta
 Assets/Plugins/CW
 Assets/Plugins/CW.meta
