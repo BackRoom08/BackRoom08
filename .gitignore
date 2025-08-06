@@ -32,6 +32,7 @@
 # Visual Studio cache directory
 .vs/
 .idea/
+.vsconfig
 
 # Gradle cache directory
 .gradle/
@@ -93,4 +94,5 @@ Assets/Plugins.meta
 Assets/Test
 Assets/Test.meta
 Assets/Plugins/CW
-Assets/Plugins/CW.meta
+Assets/Plugins/CW.meta 
+
