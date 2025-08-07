@@ -1,30 +1,41 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerMove : MonoBehaviour
-{
+{ //í”Œë ˆì´ì–´ì—ê²Œ ë¶™ìž„
     UnityEngine.CharacterController charctrl;
     public Animator anim;
 
-    public float moveSpeed;   //°ÉÀ»¶§ ¼Óµµ.
-    public float SprintSpeed; //´Þ¸®±â¼Óµµ
-    public float crouchSpeed; //¾É¾ÒÀ»¶§ ¼Óµµ
-    public float JumpForce; //Á¡ÇÁ ³ôÀÌ.
+    public float moveSpeed;   //ê±¸ì„ë•Œ ì†ë„.
+    public float SprintSpeed; //ë‹¬ë¦¬ê¸°ì†ë„
+    public float crouchSpeed; //ì•‰ì•˜ì„ë•Œ ì†ë„
+    public float JumpForce; //ì í”„ ë†’ì´.
 
-    public Transform cam; //Ä«¸Þ¶ó(¾ÉÀ»¶§ ³ôÀÌ Á¶Àý¿ë)
-    public float crouchHeight = 1f; //¾ÉÀº Ä«¸Þ¶ó ³ôÀÌ
-    public float standHeight = 1.7f; // ¼­ÀÖÀ»¶§ ³ôÀÌ
+    public float maxStamina = 100f; //ìµœëŒ€ ìŠ¤íƒœë¯¸ë„ˆ
+    public float currentStamina;    //í˜„ìž¬ ìŠ¤íƒœë¯¸ë„ˆ
+    public float StaminaUseRate = 10f; //ì´ˆë‹¹ ì†Œëª¨
+    public float staminaHeal = 10f;     //ì´ˆë‹¹ íšŒë³µ
+    public float staminaHealDelay = 2f; //ë‹¤ì‹œ íšŒë³µê¹Œì§€ í…€
 
-    private bool isCrouch = false; //¾ÉÀº »óÅÂ È®ÀÎ¿ë
-    private float gravityVelocity; //Áß·Â°ª
-    private float currentSpeed; //°È´ø ¶Ù´ø ÇöÀçÀÇ ¼Óµµ
+    public Transform cam; //ì¹´ë©”ë¼(ì•‰ì„ë•Œ ë†’ì´ ì¡°ì ˆìš©)
+    public float crouchHeight = 1f; //ì•‰ì€ ì¹´ë©”ë¼ ë†’ì´
+    public float standHeight = 1.7f; // ì„œìžˆì„ë•Œ ë†’ì´
+
+    private bool isRecovering = false;
+    private float recoveryTimer = 0f;
+
+
+    private bool isCrouch = false; //ì•‰ì€ ìƒíƒœ í™•ì¸ìš©
+    private float gravityVelocity; //ì¤‘ë ¥ê°’
+    private float currentSpeed; //ê±·ë˜ ë›°ë˜ í˜„ìž¬ì˜ ì†ë„
 
     Vector3 defaultCamPos;
     void Start()
     {
-        Cursor.lockState = CursorLockMode.Locked; //Ä¿¼­ ¼û±â±â
+        Cursor.lockState = CursorLockMode.Locked; //ì»¤ì„œ ìˆ¨ê¸°ê¸°
         defaultCamPos = cam.localPosition;
+        currentStamina = maxStamina; 
     }
     void Awake()
     {
@@ -37,16 +48,16 @@ public class PlayerMove : MonoBehaviour
         float z = Input.GetAxis("Vertical");
 
         Vector3 inputValue = Vector3.ClampMagnitude(new Vector3(x, 0, z), 1);
-        bool isMovement = inputValue.magnitude > 0.01f; //ÀÔ·ÂÀÌ ÀÖ´ÂÁö È®ÀÎ
+        bool isMovement = inputValue.magnitude > 0.01f; //ìž…ë ¥ì´ ìžˆëŠ”ì§€ í™•ì¸
 
         if (Input.GetKeyDown(KeyCode.LeftControl))
-        { //¾É°í ÀÏ¾î³ª±â
+        { //ì•‰ê³  ì¼ì–´ë‚˜ê¸°
             isCrouch = !isCrouch;
-            Debug.Log("¾É±âÅ° ÀÛµ¿");
+            Debug.Log("ì•‰ê¸°í‚¤ ìž‘ë™");
 
             float targetY = isCrouch ? crouchHeight : standHeight;
 
-            // Ä«¸Þ¶óÀÇ ·ÎÄÃ À§Ä¡ Y°ª¸¸ Á¶Á¤
+            // ì¹´ë©”ë¼ì˜ ë¡œì»¬ ìœ„ì¹˜ Yê°’ë§Œ ì¡°ì •
             cam.localPosition = new Vector3(
                 cam.localPosition.x,
                 targetY,
@@ -57,11 +68,11 @@ public class PlayerMove : MonoBehaviour
         }
 
         if (charctrl.isGrounded && Input.GetButtonDown("Jump") && !isCrouch)
-        { //¶¥¿¡ ÀÖ°í ¾ÉÀº°Ô ¾Æ´Ï¸é Á¡ÇÁ
+        { //ë•…ì— ìžˆê³  ì•‰ì€ê²Œ ì•„ë‹ˆë©´ ì í”„
             gravityVelocity = JumpForce;
         }
 
-        bool isSprint = Input.GetKey(KeyCode.LeftShift) && z > 0;
+        bool isSprint = Input.GetKey(KeyCode.LeftShift) && z > 0 && currentStamina > 0f;
         bool isWalk = currentSpeed > 0f && !isCrouch && !isSprint;
         if (isCrouch)
         {
@@ -84,11 +95,35 @@ public class PlayerMove : MonoBehaviour
             anim.SetBool("Walk", isMovement);
             anim.SetBool("Run", false);
             anim.SetBool("CrouchWalk", false);
-        }     
-        // ÇöÀç »óÅÂ¿¡ µû¶ó ¼Óµµ¸¦ ¹Ù²Þ
+        }
+        // í˜„ìž¬ ìƒíƒœì— ë”°ë¼ ì†ë„ë¥¼ ë°”ê¿ˆ
 
+        if (isSprint && isMovement)
+        {
+            currentStamina -= StaminaUseRate * Time.deltaTime;
+            currentStamina = Mathf.Clamp(currentStamina, 0f, maxStamina);
+            isRecovering = false;
+            recoveryTimer = 0f;
+        }
+        else 
+        {
+            if (!isRecovering)
+            {
+                recoveryTimer += Time.deltaTime;
+                if (recoveryTimer >= staminaHealDelay)
+                {
+                    isRecovering = true;
+                }
+            }
 
-        Vector3 move = transform.TransformDirection(inputValue) * currentSpeed;
+            if (isRecovering)
+            {
+                currentStamina += staminaHeal * Time.deltaTime;
+                currentStamina = Mathf.Clamp(currentStamina, 0f, maxStamina);
+            }
+        }
+
+            Vector3 move = transform.TransformDirection(inputValue) * currentSpeed;
 
         if (charctrl.isGrounded && gravityVelocity < 0f)
         {
@@ -98,5 +133,6 @@ public class PlayerMove : MonoBehaviour
         move.y = gravityVelocity;
 
         charctrl.Move(move * Time.deltaTime);
+        
     }
 }
