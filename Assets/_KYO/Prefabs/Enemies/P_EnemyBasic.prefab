@@ -56,6 +56,11 @@ MonoBehaviour:
   walkDuration: 4
   minMoveRange: 10
   maxMoveRange: 50
+  angularSpeed: 1000
+  acceleration: 50
+  waitLastPosition: 3
+  isPlayerInHide: 0
+  currState: 0
 --- !u!114 &8316876659666375369
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -76,6 +81,11 @@ MonoBehaviour:
   walkDuration: 10
   minMoveRange: 10
   maxMoveRange: 50
+  angularSpeed: 1000
+  acceleration: 50
+  waitLastPosition: 3
+  isPlayerInHide: 0
+  currState: 0
 --- !u!195 &1291004788463409294
 NavMeshAgent:
   m_ObjectHideFlags: 0
