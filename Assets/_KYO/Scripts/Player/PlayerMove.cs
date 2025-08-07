@@ -43,14 +43,15 @@ public class PlayerMove : MonoBehaviour
         { //앉고 일어나기
             isCrouch = !isCrouch;
             Debug.Log("앉기키 작동");
-            //float targetY = isCrouch ? crouchHeight : standHeight;
 
-            //// 카메라의 로컬 위치 Y값만 조정
-            //cam.localPosition = new Vector3(
-            //    cam.localPosition.x,
-            //    targetY,
-            //    cam.localPosition.z
-            //);
+            float targetY = isCrouch ? crouchHeight : standHeight;
+
+            // 카메라의 로컬 위치 Y값만 조정
+            cam.localPosition = new Vector3(
+                cam.localPosition.x,
+                targetY,
+                cam.localPosition.z
+            );
             anim.SetBool("Crouch", isCrouch);  
             
         }
@@ -60,7 +61,7 @@ public class PlayerMove : MonoBehaviour
             gravityVelocity = JumpForce;
         }
 
-        bool isSprint = Input.GetKey(KeyCode.LeftShift);
+        bool isSprint = Input.GetKey(KeyCode.LeftShift) && z > 0;
         bool isWalk = currentSpeed > 0f && !isCrouch && !isSprint;
         if (isCrouch)
         {
