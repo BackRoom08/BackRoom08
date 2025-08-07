@@ -92,9 +92,9 @@ public class EnemyController : MonoBehaviour
     // 배회(걷기) 상태
     protected virtual IEnumerator WalkRoutine()
     {
-        //agent.ResetPath();
+        // agent.ResetPath();
         // 랜덤 목적지 설정
-        print("walk");
+        // print("walk");
         float distance = Random.Range(minMoveRange, maxMoveRange);
         Vector3 randomDir = Random.insideUnitSphere * distance;
         randomDir += transform.position;
