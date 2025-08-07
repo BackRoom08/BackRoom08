@@ -39,9 +39,13 @@ public class EnemyController : MonoBehaviour
         agent.isStopped = true;
         
         // 방향 회전 속도
+
         agent.angularSpeed = angularSpeed;
         agent.acceleration = acceleration;
         saveChaseRange = chaseRange;
+
+        agent.angularSpeed = angularSpeed;
+        agent.acceleration = acceleration;
     }
 
     protected virtual void Start()
