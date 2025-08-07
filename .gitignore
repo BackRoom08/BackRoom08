@@ -97,7 +97,7 @@ Assets/Plugins/CW
 Assets/Plugins/CW.meta 
 
 # 프로젝트 셋팅
-ProjectSettings/Packages/com.unity.polybrush/Settings.json
-ProjectSettings/Packages/com.unity.probuilder/Settings.json
+ProjectSettings/Packages/com.unity.polybrush/*
+ProjectSettings/Packages/com.unity.probuilder/*
 
 
