@@ -27,6 +27,10 @@ public class EnemyController : MonoBehaviour
         animator = GetComponentInChildren<Animator>();
         stateTimer = Random.Range(0f, walkDuration);
         agent.isStopped = true;
+        
+        // 방향 회전 속도
+        agent.angularSpeed = 1000;
+        agent.acceleration = 50f;
     }
 
     protected virtual void Update()
