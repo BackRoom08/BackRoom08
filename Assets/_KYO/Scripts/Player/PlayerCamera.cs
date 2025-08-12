@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,7 +7,7 @@ public class NewBehaviourScript : MonoBehaviour
     public float mouseSensitivity = 200f;
     public Transform Playerbody;
     float xRotation = 0f;
-
+   
 
     void Start()
     {
@@ -22,8 +22,8 @@ public class NewBehaviourScript : MonoBehaviour
         xRotation -= mouseY;
         xRotation = Mathf.Clamp(xRotation, -90f, 90f);
 
-        transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f); // Ä«¸Ş¶ó »óÇÏ È¸Àü
-        Playerbody.Rotate(Vector3.up * mouseX); // ÇÃ·¹ÀÌ¾î ÁÂ¿ì È¸Àü
+        transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f); // ì¹´ë©”ë¼ ìƒí•˜ íšŒì „
+        Playerbody.Rotate(Vector3.up * mouseX); // í”Œë ˆì´ì–´ ì¢Œìš° íšŒì „
     }
 
 }
