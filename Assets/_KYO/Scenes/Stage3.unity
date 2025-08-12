@@ -2866,6 +2866,11 @@ PrefabInstance:
       propertyPath: SprintSpeed
       value: 10
       objectReference: {fileID: 0}
+    - target: {fileID: 8001131566506290578, guid: 4dcfdc864d175744a9f727b1ffa8acbd,
+        type: 3}
+      propertyPath: MentalDamage
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8331182571979421920, guid: 4dcfdc864d175744a9f727b1ffa8acbd,
         type: 3}
       propertyPath: m_Name
@@ -15824,7 +15829,7 @@ MonoBehaviour:
   m_OverrideVoxelSize: 0
   m_VoxelSize: 0.16666667
   m_MinRegionArea: 2
-  m_NavMeshData: {fileID: 23800000, guid: 03084de365e653642a4f6de85c850f8b, type: 2}
+  m_NavMeshData: {fileID: 23800000, guid: 03d7398537b15a84aaa0fe3748d84192, type: 2}
   m_BuildHeightMesh: 0
 --- !u!1 &1001418856
 GameObject:
