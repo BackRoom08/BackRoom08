@@ -31,6 +31,10 @@ public class PlayerMove : MonoBehaviour
     private float currentSpeed; //걷던 뛰던 현재의 속도
 
     Vector3 defaultCamPos;
+    
+    // 오민호 사운드
+    private StateNoiseEmitter noise;
+    
     void Start()
     {
         Cursor.lockState = CursorLockMode.Locked; //커서 숨기기
@@ -41,6 +45,7 @@ public class PlayerMove : MonoBehaviour
     {
         anim = GetComponent<Animator>();
         charctrl = GetComponent<UnityEngine.CharacterController>();
+        noise = GetComponent<StateNoiseEmitter>();
     }
     void Update()
     {
@@ -53,8 +58,11 @@ public class PlayerMove : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.LeftControl))
         { //앉고 일어나기
             isCrouch = !isCrouch;
-            Debug.Log("앉기키 작동");
-
+            //Debug.Log("앉기키 작동");
+            
+            noise.SetState(CharacterMoveState.Crouch);
+            //print("player Crouch");
+            
             float targetY = isCrouch ? crouchHeight : standHeight;
 
             // 카메라의 로컬 위치 Y값만 조정
@@ -70,31 +78,51 @@ public class PlayerMove : MonoBehaviour
         if (charctrl.isGrounded && Input.GetButtonDown("Jump") && !isCrouch)
         { //땅에 있고 앉은게 아니면 점프
             gravityVelocity = JumpForce;
+            noise.SetState(CharacterMoveState.Jump);
+            //print("player Jump");
         }
 
         bool isSprint = Input.GetKey(KeyCode.LeftShift) && z > 0 && currentStamina > 0f;
         bool isWalk = currentSpeed > 0f && !isCrouch && !isSprint;
         if (isCrouch)
         {
+            // 앉은 상태
             currentSpeed = crouchSpeed;
             anim.SetBool("CrouchWalk", isMovement);
             anim.SetBool("Walk", false);
             anim.SetBool("Run", false);
+            noise.SetState(CharacterMoveState.Crouch);
+            //print("player Crouch");
 
         }
         else if (isSprint)
         {
+            // 뛰기
             currentSpeed = SprintSpeed;
             anim.SetBool("Run", isMovement && isSprint);
             anim.SetBool("Walk", isMovement);
             anim.SetBool("CrouchWalk", false);
+            // 스테미나 탈진상태
+            if (currentStamina <= maxStamina * noise.breathRangeMul)
+            {
+                noise.SetState(CharacterMoveState.Exhaustion);
+                //print("player Exhausted");
+            }
+            else
+            {
+                noise.SetState(CharacterMoveState.Run);
+                //print("player Run");
+            }
         }
         else 
         {
+            // 걷기
             currentSpeed = moveSpeed;
             anim.SetBool("Walk", isMovement);
             anim.SetBool("Run", false);
             anim.SetBool("CrouchWalk", false);
+            noise.SetState(CharacterMoveState.Walk);
+           // print("player Walk");
         }
         // 현재 상태에 따라 속도를 바꿈
 
@@ -122,8 +150,8 @@ public class PlayerMove : MonoBehaviour
                 currentStamina = Mathf.Clamp(currentStamina, 0f, maxStamina);
             }
         }
-
-            Vector3 move = transform.TransformDirection(inputValue) * currentSpeed;
+        
+        Vector3 move = transform.TransformDirection(inputValue) * currentSpeed;
 
         if (charctrl.isGrounded && gravityVelocity < 0f)
         {
