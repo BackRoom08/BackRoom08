@@ -24,7 +24,11 @@ public class EnemyController : MonoBehaviour
     protected NavMeshAgent agent;      // 이동을 담당하는 NavMeshAgent 컴포넌트
     protected Animator animator;        // 애니메이션 제어용 Animator 컴포넌트
     
-    protected enum State { Idle, Walk, Chase, Wait }  // Idle : 멈춤, Walk : 걷기, Chase : 추격, Wait : 기다림
+    protected enum State { Idle,
+        Walk,
+        Chase,
+        Wait 
+    }  // Idle : 멈춤, Walk : 걷기, Chase : 추격, Wait : 기다림
     [SerializeField]protected State currState = State.Idle;  // 현재 상태
     protected Coroutine stateRoutine;   // 코루틴 값
     protected float curSpeed = 0f; // agent로 이동하는 현재 속도
