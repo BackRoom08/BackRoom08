@@ -28,7 +28,7 @@ public class PlayerInventory : MonoBehaviour
             if (Input.GetKeyDown((KeyCode)((int)KeyCode.Alpha1 + i))) 
             { //숫자키를 누르면 selectslot함수 호출하고 슬롯을 선택.
                 selectSlot(i);
-                Debug.Log($"슬롯{i+1}선택됨");
+              //  Debug.Log($"슬롯{i+1}선택됨");
             }
         }
 
@@ -53,7 +53,7 @@ public class PlayerInventory : MonoBehaviour
                 items[i] = newItem; //아이템 추가
                 itemSlot[i].sprite = newItem.icon; //스프라이트 추가
                 itemSlot[i].color = anotherSlot;
-                Debug.Log($"슬롯 {i + 1}에 '{newItem.itemName}' 추가");
+             //   Debug.Log($"슬롯 {i + 1}에 '{newItem.itemName}' 추가");
                 return;
             }
         }
@@ -75,7 +75,7 @@ public class PlayerInventory : MonoBehaviour
                 items[i] = null; //아이템데이터제거
                 itemSlot[i].sprite = null; //스프라이트제거
                 itemSlot[i].color = anotherSlot; //흰색으로 되돌림
-                Debug.Log($"'{item.itemName}' 아이템 제거됨!");
+              //  Debug.Log($"'{item.itemName}' 아이템 제거됨!");
                 return;
             }
         }
