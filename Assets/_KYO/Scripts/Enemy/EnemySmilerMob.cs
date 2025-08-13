@@ -2,12 +2,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+
+
 public class EnemySmilerMob : EnemyController
 {
     [SerializeField] private float chaseDistance = 7f; // 추격 시작 거리
     [SerializeField] private float lostDistance = 15f;  // 플레이어를 놓치는 거리
 
     private bool isChasing = false; // 현재 추격 중인지 여부
+    private EnemyPlayerAttack enemyAttack; // 공격 스크립트 참조
 
     // 컴포넌트를 가져오기 위해 Awake를 재정의.
     protected override void Awake()
@@ -15,6 +18,9 @@ public class EnemySmilerMob : EnemyController
         base.Awake(); // 부모 클래스의 Awake를 호출하여 NavMeshAgent 등을 설정합니다.
         animator = GetComponentInChildren<Animator>(); // 애니메이터를 찾습니다.
         agent.acceleration = 30f; // NavMeshAgent의 가속도를 30으로 설정
+
+        // 공격 스크립트 컴포넌트를 가져옴
+        enemyAttack = GetComponent<EnemyPlayerAttack>();
     }
 
     protected virtual void OnEnable()
@@ -114,6 +120,15 @@ public class EnemySmilerMob : EnemyController
 
             // 속도를 부드럽게 보간
             agent.speed = Mathf.Lerp(agent.speed, targetSpeed, 5f * Time.deltaTime);
+        }
+    }
+
+    // 플레이어와 충돌 시 공격 스크립트
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            enemyAttack.InitiateAttack(other.gameObject);
         }
     }
 }
