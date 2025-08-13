@@ -29,7 +29,7 @@ public class ItemPickUp : MonoBehaviour
                         }
                     }
                     Destroy(item.gameObject); //주우면 사라짐
-                    Debug.Log($"{item.data.itemName} 획득");
+                   // Debug.Log($"{item.data.itemName} 획득");
                     
                 }
             }
