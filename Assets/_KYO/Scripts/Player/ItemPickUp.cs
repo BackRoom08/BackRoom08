@@ -8,6 +8,25 @@ public class ItemPickUp : MonoBehaviour
     public float pickUpRange = 3f;
     public PlayerInventory inventory;
 
+    void Awake()
+    {       
+        cam = Camera.main;
+        GameObject canvas = GameObject.Find("Canvas");
+
+        if (canvas != null)
+        {
+            Transform playerUI = canvas.transform.Find("P_PlayerUI");
+            if (playerUI != null)
+            {
+                Transform inventoryTransform = playerUI.Find("P_InventoryController");
+                if (inventoryTransform != null)
+                {
+                    inventory = inventoryTransform.GetComponent<PlayerInventory>();
+                }
+            }
+        }
+    }
+
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.E))
@@ -26,9 +45,7 @@ public class ItemPickUp : MonoBehaviour
                         if (flashLight != null)
                         {
                             flashLight.EquipFlashLight(item.data.modelPrefab); //손전등 컴포넌트가 있으면 장착
-                        }
-                        Destroy(item.gameObject); //주우면 사라짐
-                                                  // Debug.Log($"{item.data.itemName} 획득");
+                        }                
                     }
 
                     else if (item.data.type == ItemType.Other)                    
@@ -41,6 +58,8 @@ public class ItemPickUp : MonoBehaviour
                             door.ToggleDoor(); // 문 스크립트의 함수 호출                         
                         }
                     }
+                    Destroy(item.gameObject); //주우면 사라짐
+                                              // Debug.Log($"{item.data.itemName} 획득");
                 }
             }
         }
