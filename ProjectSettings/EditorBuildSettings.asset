@@ -8,4 +8,17 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_KYO/Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
-  m_configObjects: {}
+  - enabled: 1
+    path: Assets/_KYO/Scenes/StartScene.unity
+    guid: bf211432af8ed66468e377994cf37daf
+  - enabled: 1
+    path: Assets/_KYO/Scenes/Stage1.unity
+    guid: 93ab6f5923b8dab4db16209b3abff83d
+  - enabled: 1
+    path: Assets/_KYO/Scenes/Stage3.unity
+    guid: d147e00bfced2a3468537c42e761a2e7
+  m_configObjects:
+    com.unity.addressableassets: {fileID: 11400000, guid: 6f68a1d23a2b47c4eb2557b5f5705fe6,
+      type: 2}
+    com.unity.localization.settings: {fileID: 11400000, guid: 2822b977f6f08714d9f6009884e231f5,
+      type: 2}

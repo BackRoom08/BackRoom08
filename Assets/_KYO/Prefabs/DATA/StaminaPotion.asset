@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 641ddc971de6e98438aa9d4226834236, type: 3}
+  m_Name: StaminaPotion
+  m_EditorClassIdentifier: 
+  uid: 2
+  type: 0
+  icon: {fileID: 21300000, guid: cfad8ef0b5f68ac46bd02b3156b377a4, type: 3}
+  modelPrefab: {fileID: 1477535650039924, guid: 3c878bfc3da36aa478e475627da7c983,
+    type: 3}
+  itemName: "\uC2E0\uBE44\uD55C \uBB3C\uBCD1"
+  description: "\uB354\uC6B1 \uB354 \uB2EC\uB9B4 \uC218 \uC788\uAC8C \uD574\uC8FC\uB294
+    \uC2E0\uBE44\uD55C \uBB3C"
+  HealStaminaRate: 50

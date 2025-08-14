@@ -1,6 +1,10 @@
+using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-// TMP 쓰면 using TMPro;
+using System.Threading.Tasks;
+using UnityEngine.Localization;
+using UnityEngine.Localization.Settings;
 
 public class SettingUI : MonoBehaviour
 {
@@ -11,8 +15,8 @@ public class SettingUI : MonoBehaviour
     public Slider sfxSlider;
     public Slider sensSlider;
     
-    public Text languageValueText;   // TMP를 쓰면 TMP_Text로 바꿔줘
-    public Text screenModeValueText;
+    public TMP_Text languageValueText;
+    public TMP_Text screenModeValueText;
 
     // 순환 후보들 (표시용 텍스트와 내부코드 매핑)
     readonly string[] langCodes = { "ko", "en" };
@@ -21,7 +25,7 @@ public class SettingUI : MonoBehaviour
     readonly string[] modeCodes = { "fullscreen", "windowed" };
     readonly string[] modeTexts = { "전체 화면", "창 모드" };
 
-    int langIndex  = 0;
+    [SerializeField] int langIndex  = 0;
     int modeIndex  = 0;
 
     void OnEnable(){
@@ -50,23 +54,27 @@ public class SettingUI : MonoBehaviour
         //UpdateModeLabel();
     }
 
-    // === 슬라이더 콜백 ===
+    // 슬라이더 연결
     public void OnMasterChanged(float v){ data.masterVolume = v; }
     public void OnBgmChanged(float v){    data.bgmVolume    = v; }
     public void OnSfxChanged(float v){    data.sfxVolume    = v; }
     public void OnSensChanged(float v){   data.mouseSensitivity = v; }
 
-    // === 언어 좌/우 버튼 ===
+    // 언어 버튼 연결
     public void OnClickLangLeft(){  langIndex = (langIndex - 1 + langCodes.Length) % langCodes.Length; UpdateLangLabel(); }
     public void OnClickLangRight(){ langIndex = (langIndex + 1) % langCodes.Length; UpdateLangLabel(); }
 
-    void UpdateLangLabel(){
+    async void UpdateLangLabel(){
         data.language = langCodes[langIndex];
         if (languageValueText) languageValueText.text = langTexts[langIndex];
-        // 실제 로컬라이즈 시스템 연동은 프로젝트에 맞춰 별도 적용하세요.
+       
+        // 언어 변경
+        await LocalizationSettings.InitializationOperation.Task;
+        var locale = LocalizationSettings.AvailableLocales.GetLocale(new LocaleIdentifier(data.language));
+        if (locale != null) LocalizationSettings.SelectedLocale = locale;
     }
 
-    // === 화면모드 좌/우 버튼 ===
+    // 화면 버튼 연결
     public void OnClickModeLeft(){  modeIndex = (modeIndex - 1 + modeCodes.Length) % modeCodes.Length; UpdateModeAndApply(); }
     public void OnClickModeRight(){ modeIndex = (modeIndex + 1) % modeCodes.Length; UpdateModeAndApply(); }
 

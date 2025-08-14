@@ -15,17 +15,17 @@ public class PlayerStatus : MonoBehaviour
 
     void Start()
     {
-        currentMentalHP = MentalHP; 
+        //anim = GetComponent<Animator>();
+        currentMentalHP = MentalHP;
         StartCoroutine(DecreaseMentalHP()); //코루틴 시작
     }
 
     public void HealMentalHP(int amount)
-    { 
+    {
         if (isDead) return; //죽었으면 함수종료
 
         currentMentalHP += amount; //정신력 회복
-        currentMentalHP = Mathf.Min(currentMentalHP, MentalHP); //정신력 최대치 제한
-
+        currentMentalHP = Mathf.Min(currentMentalHP, MentalHP); //정신력 최대치 제한   
     }
     IEnumerator DecreaseMentalHP()
     {
@@ -42,25 +42,25 @@ public class PlayerStatus : MonoBehaviour
                 Die(); //사망
             }
 
-            void Die() 
+            void Die()
             {
                 isDead = true;
                 Debug.Log("사망");
                 anim.SetTrigger("Dead");
 
                 PlayerMove moveScript = GetComponent<PlayerMove>();
-                if (moveScript != null) 
+                if (moveScript != null)
                 {
-                moveScript.enabled = false;     //비활성화   
+                    moveScript.enabled = false;     //비활성화   
                 }
                 StartCoroutine(RemoveAfterDelay(3f)); //3초뒤 파괴
             }
 
-           
+
         }
     }
 
-    IEnumerator RemoveAfterDelay(float delay) 
+    IEnumerator RemoveAfterDelay(float delay)
     {
         yield return new WaitForSeconds(delay);
         Destroy(gameObject);
