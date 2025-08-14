@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
@@ -139,7 +139,11 @@ public class EnemyController : MonoBehaviour
                 ChangeState(State.Idle);
                 yield break;
             }
-            agent.SetDestination(player.position);
+            // 공격모션 실행시 오류 방지 코드
+            if (agent.enabled && agent.isOnNavMesh)
+            {
+                agent.SetDestination(player.position);
+            }
             OnChasePlayer();
             yield return null;
         }

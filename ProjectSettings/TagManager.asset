@@ -6,7 +6,7 @@ TagManager:
   tags:
   - Wall
   - computerPassword
-  - Item
+  - CutScene
   layers:
   - Default
   - TransparentFX
@@ -18,7 +18,7 @@ TagManager:
   - Enemy
   - Player
   - Interactable
-  - 
+  - Object
   - 
   - 
   - 
