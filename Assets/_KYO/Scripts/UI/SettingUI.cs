@@ -1,7 +1,10 @@
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-// TMP 쓰면 using TMPro;
+using System.Threading.Tasks;
+using UnityEngine.Localization;
+using UnityEngine.Localization.Settings;
 
 public class SettingUI : MonoBehaviour
 {
@@ -22,7 +25,7 @@ public class SettingUI : MonoBehaviour
     readonly string[] modeCodes = { "fullscreen", "windowed" };
     readonly string[] modeTexts = { "전체 화면", "창 모드" };
 
-    int langIndex  = 0;
+    [SerializeField] int langIndex  = 0;
     int modeIndex  = 0;
 
     void OnEnable(){
@@ -61,10 +64,14 @@ public class SettingUI : MonoBehaviour
     public void OnClickLangLeft(){  langIndex = (langIndex - 1 + langCodes.Length) % langCodes.Length; UpdateLangLabel(); }
     public void OnClickLangRight(){ langIndex = (langIndex + 1) % langCodes.Length; UpdateLangLabel(); }
 
-    void UpdateLangLabel(){
+    async void UpdateLangLabel(){
         data.language = langCodes[langIndex];
         if (languageValueText) languageValueText.text = langTexts[langIndex];
-        // 실제 로컬라이즈 시스템 연동은 프로젝트에 맞춰 별도 적용하세요.
+       
+        // 언어 변경
+        await LocalizationSettings.InitializationOperation.Task;
+        var locale = LocalizationSettings.AvailableLocales.GetLocale(new LocaleIdentifier(data.language));
+        if (locale != null) LocalizationSettings.SelectedLocale = locale;
     }
 
     // 화면 버튼 연결
