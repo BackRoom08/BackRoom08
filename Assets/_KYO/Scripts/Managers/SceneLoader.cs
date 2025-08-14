@@ -7,7 +7,7 @@ public class SceneLoader : MonoBehaviour
     public static SceneLoader Instance { get; private set; }
 
     [SerializeField] private string bootstrapSceneName = "SampleScene"; // 전역 시스템 담긴 씬(선택)
-    [SerializeField] private float minLoadingTime = 0.5f; // 로딩화면 최소 노출
+    [SerializeField] private float minLoadingTime = 2f; // 로딩화면 최소 노출
     
     [SerializeField] private bool autoLoadOnStart = true;
     [SerializeField] private string firstSceneToLoad = "StartScene";
@@ -28,18 +28,22 @@ public class SceneLoader : MonoBehaviour
     IEnumerator AutoKickoff()
     {
         yield return null;
-        LoadSceneAdditive(firstSceneToLoad);
+        //LoadSceneAdditive(firstSceneToLoad);
+        LoadSceneAdditive(firstSceneToLoad, false);
     }
     
-    public void LoadSceneAdditive(string sceneName)
+    public void LoadSceneAdditive(string sceneName, bool showLoading)
     {
-        StartCoroutine(CoLoad(sceneName));
+        StartCoroutine(CoLoad(sceneName, showLoading));
     }
 
-    IEnumerator CoLoad(string sceneName)
+    IEnumerator CoLoad(string sceneName, bool showLoading)
     {
-        UIManager.Instance.ShowLoading(true);
-        UIManager.Instance.SetLoadingProgress(0f);
+        if (showLoading && UIManager.Instance)
+        {
+            UIManager.Instance.ShowLoading(true);
+            UIManager.Instance.SetLoadingProgress(0f);
+        }
         print("loading");
 
         // 다음 씬 로드
@@ -78,8 +82,11 @@ public class SceneLoader : MonoBehaviour
         }
         //print("444444");
         // 로딩 완료
-        UIManager.Instance.SetLoadingProgress(1f);
-        UIManager.Instance.ShowLoading(false);
+        if (showLoading && UIManager.Instance)
+        {
+            UIManager.Instance.SetLoadingProgress(1f);
+            UIManager.Instance.ShowLoading(false);
+        }
         //print("loaded");
 
         // (옵션) 로딩 종료 후 커서/타임스케일은 UIManager가 관리
