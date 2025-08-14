@@ -12,6 +12,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: HealWater
       objectReference: {fileID: 0}
+    - target: {fileID: 100000, guid: dd5aa0c3f535aae42855c3dc00bf33d0, type: 3}
+      propertyPath: m_TagString
+      value: Item
+      objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: dd5aa0c3f535aae42855c3dc00bf33d0, type: 3}
       propertyPath: m_LocalPosition.x
       value: 5.89

@@ -7,6 +7,7 @@ public class ItemUser : MonoBehaviour
     public PlayerStatus playerStatus;
     public ItemDatas currentItem;
     public PlayerInventory inventory;
+    public PlayerMove playermove;
 
     void Update()
     {
@@ -20,13 +21,42 @@ public class ItemUser : MonoBehaviour
 
     public void UseItem()
     {
+        if (currentItem == null) return;
+
+        // 정신력 회복 아이템
         if (currentItem is HealItem healItem)
-        { //선택된 템이 회복템이면
-            healItem.Use(playerStatus); //회복 use함수 호출
-            
-            inventory.RemoveItem(currentItem); //사용했으면 제거
+        {
+            healItem.Use(playerStatus);
+            playermove.anim.SetBool("Drink", true);
+            StartCoroutine(UseAndRemoveAfterDelay(1f));
+
+        }
+        // 스태미나 회복 아이템
+        else if (currentItem is StaminaPotion staminaPotion)
+        {
+            PlayerMove playerMove = GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerMove>();
+            staminaPotion.Use(playerMove);
+            StartCoroutine(UseAndRemoveAfterDelay(1f));
+        }
+        else
+        {
+            Debug.Log("사용할 수 없는 아이템입니다.");
+        }
+    }
+
+
+    IEnumerator UseAndRemoveAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        playermove.anim.SetBool("Drink", false);
+
+        if (currentItem != null)
+        {
+            inventory.RemoveItem(currentItem); // 1초 후 제거
             currentItem = null;
         }
     }
+
 }
 
