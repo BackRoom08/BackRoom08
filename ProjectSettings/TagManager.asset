@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Wall
   - computerPassword
+  - CutScene
   layers:
   - Default
   - TransparentFX

@@ -12,7 +12,7 @@ public class Door : MonoBehaviour
         animator = GetComponent<Animator>();
     }
 
-    private void ToggleDoor()
+    public void ToggleDoor()
     {
         bool isOpen = animator.GetBool("isOpen");
         animator.SetBool("isOpen", !isOpen );
