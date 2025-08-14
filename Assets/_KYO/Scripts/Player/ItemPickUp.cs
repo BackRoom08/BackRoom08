@@ -27,15 +27,25 @@ public class ItemPickUp : MonoBehaviour
                         {
                             flashLight.EquipFlashLight(item.data.modelPrefab); //손전등 컴포넌트가 있으면 장착
                         }
+                        Destroy(item.gameObject); //주우면 사라짐
+                                                  // Debug.Log($"{item.data.itemName} 획득");
                     }
-                    Destroy(item.gameObject); //주우면 사라짐
-                   // Debug.Log($"{item.data.itemName} 획득");
-                    
+
+                    else if (item.data.type == ItemType.Other)                    
+                    {
+                        Door door = hit.collider.GetComponent<Door>();
+                        if (door != null)
+                        {
+                            print("Other객체 입니당");
+
+                            door.ToggleDoor(); // 문 스크립트의 함수 호출                         
+                        }
+                    }
                 }
             }
         }
 
-      
+
     }
 
 }
