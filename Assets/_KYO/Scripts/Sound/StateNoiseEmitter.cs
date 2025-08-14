@@ -56,6 +56,20 @@ public class StateNoiseEmitter : MonoBehaviour
     }
     
     
+    // SetState 추가 할시 아래 코드 3줄 추가해서 원하는값 대입 필요
+    // 1. Enum 값추가
+    // 2. AudioClip 변수 추가해서 원하는값 넣기
+    // 3. SetState 함수에 스위치문 추가
+    // 4. 아래값 추가 ( PlayLoop의 가운데값 클립만 바꾸면 됨)
+    // PlayLoop(stepSource, 추가한 AudioClip 클립, ref currentClip);
+    // isActive = true;
+    // currentLoudMul  = walkLoudMul;
+    // 해당하는 스크립트에서 SetState호출
+    // 호출할시 
+    // private StateNoiseEmitter noise; 변수 선언
+    // 만든 이넘값 넣어서 호출
+    // noise.SetState(CharacterMoveState.만든 이넘(Enum));
+    
     // 사운드 필요한곳에서 호출
     public void SetState(CharacterMoveState state)
     {
@@ -96,6 +110,7 @@ public class StateNoiseEmitter : MonoBehaviour
                 currentRangeMul = breathRangeMul;
                 break;
             
+            // 여기 위에 추가 케이스 만들어서
             default:
                 break;
         }
