@@ -1,6 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PasswordClearMap : MonoBehaviour
 {//passwordPC 프리팹에 부착
@@ -17,29 +20,63 @@ public class PasswordClearMap : MonoBehaviour
     public GameObject interactText; // 안내 텍스트
     private bool isOnMouse = false; //마우스가 올라왔나 확인
     private bool isEkeydown = false;
-    void Update()
+
+    void Awake()
     {
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit; //레이를 쏘고 정보를 변수에 담음
+        GameObject canvas = GameObject.Find("Canvas");
+        GameObject suitObject = GameObject.Find("Mesh_protective suit");
+        if (canvas != null)
+        {
+            // 모든 자식 중에서 GameObject 이름이 "P_PasswordUI"인 것 찾기
+            passwordUI = canvas.GetComponentsInChildren<Transform>(true)
+                               .FirstOrDefault(t => t.name == "P_PasswordUI")?.gameObject;
 
-        if (Physics.Raycast(ray, out hit, interactDistance, interactLayer))
-        { //오브젝트에 닿았나 확인
-            if (hit.collider.CompareTag("computerPassword"))
-            { //태그 확인
-                if (!isOnMouse && !isEkeydown) 
-                {//마우스가 오브젝트에 올라왔으면
-                    interactText.SetActive(true);   
-                    isOnMouse = true;
-                }//안내텍스트 보여줌
+            interactText = canvas.GetComponentsInChildren<Text>(true)
+                                .FirstOrDefault(t => t.name == "P_PasswordText")?.gameObject;
 
-                if (Input.GetKeyDown(KeyCode.E))
+        }
+
+
+
+        if (suitObject != null)
+        {
+            // 그 자식 중 "Look" 오브젝트를 찾아서 연결
+            Transform lookTransform = suitObject.transform.Find("Look");
+
+            if (lookTransform != null)
+            {
+                cameraControllerObject = lookTransform.gameObject;
+            }
+        }
+    }
+        void Update()
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit; //레이를 쏘고 정보를 변수에 담음
+
+            if (Physics.Raycast(ray, out hit, interactDistance, interactLayer))
+            { //오브젝트에 닿았나 확인
+                if (hit.collider.CompareTag("computerPassword"))
+                { //태그 확인
+                    if (!isOnMouse && !isEkeydown)
+                    {//마우스가 오브젝트에 올라왔으면
+                        interactText.SetActive(true);
+                        isOnMouse = true;
+                    }//안내텍스트 보여줌
+
+                    if (Input.GetKeyDown(KeyCode.E))
+                    {
+                        isEkeydown = true;
+                        cameraControllerObject.SetActive(false);
+                        passwordUI.SetActive(true);
+                        Cursor.lockState = CursorLockMode.None;
+                        Cursor.visible = true;
+                        //UI를 띄우고 시점을 고정하고 커서를 보이게 함
+                        HideText();
+                    }
+                }
+                else
                 {
-                    isEkeydown = true;
-                    cameraControllerObject.SetActive(false);
-                    passwordUI.SetActive(true);
-                    Cursor.lockState = CursorLockMode.None;
-                    Cursor.visible = true;
-                    //UI를 띄우고 시점을 고정하고 커서를 보이게 함
                     HideText();
                 }
             }
@@ -47,18 +84,13 @@ public class PasswordClearMap : MonoBehaviour
             {
                 HideText();
             }
-        }
-        else
-        {
-            HideText();
-        }
 
-        if (Input.GetKeyDown(KeyCode.Escape))
-        {
-            ClosePasswordUI();
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                ClosePasswordUI();
+            }
         }
-    }
-
+    
     public void ClosePasswordUI()
     {
         passwordUI.SetActive(false);            //UI비활성화
