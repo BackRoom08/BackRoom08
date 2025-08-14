@@ -32,6 +32,13 @@ public class SceneLoader : MonoBehaviour
         LoadSceneAdditive(firstSceneToLoad, false);
     }
     
+    // 씬 전환 사용
+    // 아래 그대로 호출 씬이름만 넣어서
+    // SceneLoader.Instance.LoadSceneAdditive("본인 씬", true);
+    // 예시
+    // SceneLoader.Instance.LoadSceneAdditive("Stage1", true);
+    
+    // 씬 전환 로더
     public void LoadSceneAdditive(string sceneName, bool showLoading)
     {
         StartCoroutine(CoLoad(sceneName, showLoading));
@@ -44,7 +51,7 @@ public class SceneLoader : MonoBehaviour
             UIManager.Instance.ShowLoading(true);
             UIManager.Instance.SetLoadingProgress(0f);
         }
-        print("loading");
+        //print("loading");
 
         // 다음 씬 로드
         AsyncOperation op = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
