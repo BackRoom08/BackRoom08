@@ -163,4 +163,10 @@ public class PlayerMove : MonoBehaviour
         charctrl.Move(move * Time.deltaTime);
         
     }
+
+    public void HealStamina(int amount)
+    { //스태미너 회복물약을 사용하기 위한 함수
+        currentStamina += amount;
+        currentStamina = Mathf.Min(currentStamina, maxStamina);
+    }
 }
