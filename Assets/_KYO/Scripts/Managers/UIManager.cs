@@ -1,3 +1,4 @@
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
@@ -75,8 +76,16 @@ public class UIManager : MonoBehaviour
         Time.timeScale = 1f;
         AudioListener.pause = false;
         IsPaused = false;
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = true;
+        // 조건 현재 플레이씬인지
+        var activeScene = SceneManager.GetActiveScene().name;
+        
+        // 나중에 앤딩씬도 넣어줘야함
+        if(activeScene != "StartScene")
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+            //print("activeScene");
+        }
     }
     
     // 플레이어만 멈추는 로직 
@@ -85,8 +94,16 @@ public class UIManager : MonoBehaviour
     public void ShowLoading(bool show)
     {
         if (loadingPanel) loadingPanel.SetActive(show);
-        if (show) { PauseGame(); }           // 로딩 중엔 게임 입력/동작 멈춤
-        else      { ResumeGame(); }
+        if (show)
+        {
+            PauseGame();
+            //print("Pause");
+        }           // 로딩 중엔 게임 입력/동작 멈춤
+        else
+        {
+            ResumeGame(); 
+            //print("Resume");
+        }
     }
 
     public void SetLoadingProgress(float p01)

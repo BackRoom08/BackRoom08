@@ -2,8 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-using UnityEngine;
-
 public enum CharacterMoveState
 {
     Idle,   // 멈춤 
@@ -39,9 +37,12 @@ public class StateNoiseEmitter : MonoBehaviour
     float currentRangeMul = 1f;
     
     // 중복 방지
-    AudioClip currentClip;
-    CharacterMoveState currentState = CharacterMoveState.Idle;
+    [SerializeField] AudioClip currentClip;
+    [SerializeField] CharacterMoveState currentState = CharacterMoveState.Idle;
 
+    [SerializeField, Tooltip("사운드 인식 끄기(사운드 인식이 필요없다면 꼭 false로)")]
+    private bool loudEnabled = false;
+    
     void Awake()
     {
         if (!stepSource)   stepSource   = gameObject.AddComponent<AudioSource>();
@@ -53,6 +54,7 @@ public class StateNoiseEmitter : MonoBehaviour
             s.loop = true; s.playOnAwake = false; s.pitch = 1f; s.volume = masterVolume;
         }
     }
+    
     
     // 사운드 필요한곳에서 호출
     public void SetState(CharacterMoveState state)
@@ -67,6 +69,9 @@ public class StateNoiseEmitter : MonoBehaviour
         
         switch (currentState)
         {
+            case CharacterMoveState.Idle:
+                //print("Idle");
+                break;
             case CharacterMoveState.Walk:
                 //print("Walk");
                 PlayLoop(stepSource, walkClip, ref currentClip);
@@ -99,8 +104,9 @@ public class StateNoiseEmitter : MonoBehaviour
     void Update()
     {
         // 사운드 인식 알림
-        if (isActive)
-            EmitNoise(currentLoudMul, currentRangeMul);
+        if (!loudEnabled || !isActive) return;
+        
+        EmitNoise(currentLoudMul, currentRangeMul);
     }
     
     void PlayLoop(AudioSource src, AudioClip clip, ref AudioClip current)
