@@ -142540,6 +142540,16 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6668083693143419526, guid: 4dcfdc864d175744a9f727b1ffa8acbd,
+        type: 3}
+      propertyPath: StaminaUseRate
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 8001131566506290578, guid: 4dcfdc864d175744a9f727b1ffa8acbd,
+        type: 3}
+      propertyPath: MentalDamage
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8331182571979421920, guid: 4dcfdc864d175744a9f727b1ffa8acbd,
         type: 3}
       propertyPath: m_Name

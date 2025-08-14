@@ -74,7 +74,7 @@ public class PlayerMove : MonoBehaviour
             anim.SetBool("Crouch", isCrouch);  
             
         }
-
+        
         if (charctrl.isGrounded && Input.GetButtonDown("Jump") && !isCrouch)
         { //땅에 있고 앉은게 아니면 점프
             gravityVelocity = JumpForce;
@@ -82,6 +82,16 @@ public class PlayerMove : MonoBehaviour
             //print("player Jump");
         }
 
+        if (Input.GetKeyDown(KeyCode.F1))
+        {
+            UIManager.Instance.ToggleSettings();
+        }
+        
+        if (anim.GetCurrentAnimatorStateInfo(0).IsName("Idle"))
+        {
+            noise.SetState(CharacterMoveState.Idle);
+        }
+        
         bool isSprint = Input.GetKey(KeyCode.LeftShift) && z > 0 && currentStamina > 0f;
         bool isWalk = currentSpeed > 0f && !isCrouch && !isSprint;
         if (isCrouch)
@@ -98,6 +108,7 @@ public class PlayerMove : MonoBehaviour
         else if (isSprint)
         {
             // 뛰기
+            currentSpeed = SprintSpeed;
             currentSpeed = SprintSpeed;
             anim.SetBool("Run", isMovement && isSprint);
             anim.SetBool("Walk", isMovement);
@@ -121,7 +132,8 @@ public class PlayerMove : MonoBehaviour
             anim.SetBool("Walk", isMovement);
             anim.SetBool("Run", false);
             anim.SetBool("CrouchWalk", false);
-            noise.SetState(CharacterMoveState.Walk);
+            if(anim.GetCurrentAnimatorStateInfo(0).IsName("Walk"))
+                noise.SetState(CharacterMoveState.Walk);
            // print("player Walk");
         }
         // 현재 상태에 따라 속도를 바꿈

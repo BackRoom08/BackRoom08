@@ -6,8 +6,11 @@ public class SceneLoader : MonoBehaviour
 {
     public static SceneLoader Instance { get; private set; }
 
-    [SerializeField] private string bootstrapSceneName = "Bootstrap"; // 전역 시스템 담긴 씬(선택)
+    [SerializeField] private string bootstrapSceneName = "SampleScene"; // 전역 시스템 담긴 씬(선택)
     [SerializeField] private float minLoadingTime = 0.5f; // 로딩화면 최소 노출
+    
+    [SerializeField] private bool autoLoadOnStart = true;
+    [SerializeField] private string firstSceneToLoad = "StartScene";
 
     void Awake()
     {
@@ -16,6 +19,18 @@ public class SceneLoader : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
+    void Start()
+    {
+        if (autoLoadOnStart && !string.IsNullOrEmpty(firstSceneToLoad))
+            StartCoroutine(AutoKickoff());
+    }
+    
+    IEnumerator AutoKickoff()
+    {
+        yield return null;
+        LoadSceneAdditive(firstSceneToLoad);
+    }
+    
     public void LoadSceneAdditive(string sceneName)
     {
         StartCoroutine(CoLoad(sceneName));
@@ -25,6 +40,7 @@ public class SceneLoader : MonoBehaviour
     {
         UIManager.Instance.ShowLoading(true);
         UIManager.Instance.SetLoadingProgress(0f);
+        print("loading");
 
         // 다음 씬 로드
         AsyncOperation op = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
@@ -37,14 +53,14 @@ public class SceneLoader : MonoBehaviour
             UIManager.Instance.SetLoadingProgress(op.progress);
             yield return null;
         }
-
+        //print("11111");
         // 최소 노출 시간 보정
         while (elapsed < minLoadingTime)
         {
             elapsed += Time.unscaledDeltaTime;
             yield return null;
         }
-
+        //print("2222");
         // 활성화
         op.allowSceneActivation = true;
         while (!op.isDone) yield return null;
@@ -52,7 +68,7 @@ public class SceneLoader : MonoBehaviour
         // 활성 씬 지정
         var loaded = SceneManager.GetSceneByName(sceneName);
         SceneManager.SetActiveScene(loaded);
-
+        //print("33333");
         // 이전 씬 언로드 (부트스트랩은 유지)
         for (int i = SceneManager.sceneCount - 1; i >= 0; --i)
         {
@@ -60,10 +76,11 @@ public class SceneLoader : MonoBehaviour
             if (s.name != sceneName && s.isLoaded && s.name != bootstrapSceneName)
                 yield return SceneManager.UnloadSceneAsync(s);
         }
-
+        //print("444444");
         // 로딩 완료
         UIManager.Instance.SetLoadingProgress(1f);
         UIManager.Instance.ShowLoading(false);
+        //print("loaded");
 
         // (옵션) 로딩 종료 후 커서/타임스케일은 UIManager가 관리
     }
