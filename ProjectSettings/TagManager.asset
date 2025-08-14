@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Wall
   - computerPassword
+  - Item
   layers:
   - Default
   - TransparentFX

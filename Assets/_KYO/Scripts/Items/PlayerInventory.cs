@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
+
 using static UnityEditor.Progress;
 
 public class PlayerInventory : MonoBehaviour
@@ -12,7 +13,10 @@ public class PlayerInventory : MonoBehaviour
     public Color selectedSlot = Color.blue;   // 선택된 칸의 색
     public Color anotherSlot = Color.white; //선택되지않은 다른칸의 색
 
+    public Transform HandTransform; //손위치
+    private GameObject currentHeldItem; //현재 손에든 아이템
     private int selectedIndex = -1; //현재 선택된 슬롯의 인덱스 변수. 초기값은 아무것도 없는 상태
+    
 
 
         void Start()
@@ -31,7 +35,6 @@ public class PlayerInventory : MonoBehaviour
               //  Debug.Log($"슬롯{i+1}선택됨");
             }
         }
-
     }
 
     void selectSlot(int index)
@@ -42,7 +45,38 @@ public class PlayerInventory : MonoBehaviour
             itemSlot[i].color = (i == index) ? selectedSlot : anotherSlot;
         }
         //선택된 슬롯 인덱스를 저장하고 선택한 슬롯은 파랑색, 나머지는 흰색으로 
-        // 아이템 관련 코드 추가             
+        // 아이템 관련 코드 추가
+        ShowHeldItem();
+    }
+
+    void ShowHeldItem() 
+    {
+        // 기존 아이템 제거
+        if (currentHeldItem != null)
+        {
+            Destroy(currentHeldItem);
+        }
+
+        ItemDatas selectedItem = GetSelectedItem();
+        if (selectedItem != null && selectedItem.type == ItemType.Consumable && selectedItem.modelPrefab != null)
+        { //선택된 아이템이 있고 소모타입이고 프리팹이 있으면
+            currentHeldItem = Instantiate(selectedItem.modelPrefab, HandTransform); //복제해서 손에 붙임
+            currentHeldItem.transform.localPosition = Vector3.zero; //위치 초기화
+            currentHeldItem.transform.localRotation = Quaternion.identity; //회전 초기화
+
+            Collider col = currentHeldItem.GetComponent<Collider>();
+            if (col != null)//콜라이더가 있으면 비활성화
+            {
+                col.enabled = false;
+            }
+
+            Rigidbody rb = currentHeldItem.GetComponent<Rigidbody>();
+            if (rb != null) //리지드바디가 있다면 중력끄고 키네마틱 온
+            {
+                rb.isKinematic = true;
+                rb.useGravity = false;
+            }
+        }
     }
     public void AddItem(ItemDatas newItem)
     {
@@ -58,8 +92,9 @@ public class PlayerInventory : MonoBehaviour
             }
         }
     }
+
     void DeselectAllSlot() 
-    {
+    {//선택되지않은 칸은 색을 되돌림
         foreach (var slot in itemSlot)
         {
             slot.color = anotherSlot;
@@ -75,11 +110,15 @@ public class PlayerInventory : MonoBehaviour
                 items[i] = null; //아이템데이터제거
                 itemSlot[i].sprite = null; //스프라이트제거
                 itemSlot[i].color = anotherSlot; //흰색으로 되돌림
+
+                if (currentHeldItem != null)
+                {
+                    Destroy(currentHeldItem);
+                }
               //  Debug.Log($"'{item.itemName}' 아이템 제거됨!");
                 return;
             }
         }
-
     }
 
     public ItemDatas GetSelectedItem() 
