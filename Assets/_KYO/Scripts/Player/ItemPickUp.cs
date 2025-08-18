@@ -12,15 +12,23 @@ public class ItemPickUp : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.E))
         {
-            Ray ray = new Ray(cam.transform.position, cam.transform.forward); //ray를 앞으로 쏨
+            
+            Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0)); //ray를 앞으로 쏨
+            Debug.DrawRay(ray.origin, ray.direction * pickUpRange, Color.yellow, 1.0f); // 디버그용 Ray 그리기
             if (Physics.Raycast(ray, out RaycastHit hit, pickUpRange))
             {//ray를 쏴서 거리내에 뭔가 닿았다면 hit에 값을 저장
 
                 // IInteractable 인터페이스를 가진 컴포넌트인지 검사
                 IInteractable interactable = hit.collider.GetComponent<IInteractable>();
+                if (interactable == null)
+                {
+                    interactable = hit.collider.GetComponentInParent<IInteractable>();
+                }
+
                 if (interactable != null)
                 {
                     // 상호작용 실행
+                    print("상호작용 실행");
                     interactable.Interact();
                 }
                 else

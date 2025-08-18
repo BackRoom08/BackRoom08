@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections; // 코루틴을 위해 추가
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
-
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal; // Vignette를 위해 추가
 
 public class MapManager : MonoBehaviour
 {
@@ -12,9 +14,16 @@ public class MapManager : MonoBehaviour
     [Header("스폰 위치")]
     [Tooltip("플레이어가 스폰될 위치")]
     public Transform playerSpawnPoint;
+    public Transform playerDeadRoomPoint;
 
     [Tooltip("적들이 스폰될 위치 목록")]
     public List<Transform> enemySpawnPoints;
+    public Transform enemyDeadRoomPoints;
+
+    [Tooltip("페이드 효과에 사용할 Global Volume")]
+    public Volume volume;
+    private Vignette vignette;
+
 
     [Header("환경광 및 안개")]
     [Tooltip("환경광의 색상")]
@@ -30,16 +39,6 @@ public class MapManager : MonoBehaviour
     [Tooltip("안개 농도")]
     public float fogDensity = 0.01f;
 
-    [Header("맵 이벤트")]
-    [Tooltip("맵 시작 시 호출될 이벤트")]
-    public UnityEvent onMapStart;
-
-    [Header("플레이어 제어 이벤트")]
-    [Tooltip("컷씬 시작 등 플레이어 조작을 비활성화할 때 호출할 이벤트")]
-    public UnityEvent onPlayerControlDisable;
-
-    [Tooltip("컷씬 종료 등 플레이어 조작을 다시 활성화할 때 호출할 이벤트")]
-    public UnityEvent onPlayerControlEnable;
 
     private void Awake()
     {
@@ -58,7 +57,16 @@ public class MapManager : MonoBehaviour
     private void Start()
     {
         ApplyMapSettings();
-        onMapStart?.Invoke();
+        
+        // Volume 프로파일에서 Vignette 컴포넌트를 찾아서 미리 저장해둡니다.
+        if (volume != null && volume.profile.TryGet(out vignette))
+        {
+            // 성공
+        }
+        else
+        {
+            Debug.LogWarning("MapManager: Volume 또는 Volume Profile에 Vignette가 없습니다.");
+        }
     }
 
     /// <summary>
@@ -80,16 +88,48 @@ public class MapManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 지정된 ID의 문을 여는 이벤트.
+    /// 화면을 검게 만듭니다.
     /// </summary>
-    /// <param name="doorId">문의 고유 ID</param>
-    public void OpenDoor(int doorId)
+    /// <param name="duration">페이드 아웃에 걸리는 시간(초)</param>
+    public void FadeOut(float duration)
     {
-        Debug.Log($"MapManager: {doorId}번 문을 엽니다.");
-        // 
-        // 예: 애니메이션 실행, 콜라이더 비활성화 등
+        if (vignette != null)
+        {
+            StartCoroutine(Co_Fade(1f, duration));
+        }
     }
-   
-    
+
+    /// <summary>
+    /// 검은 화면에서 다시 밝게 만듭니다.
+    /// </summary>
+    /// <param name="duration">페이드 인에 걸리는 시간(초)</param>
+    public void FadeIn(float duration)
+    {
+        if (vignette != null)
+        {
+            StartCoroutine(Co_Fade(0f, duration));
+        }
+    }
+
+    private IEnumerator Co_Fade(float targetIntensity, float duration)
+    {
+        float startIntensity = vignette.intensity.value;
+        float startSmoothness = vignette.smoothness.value;
+        float time = 0;
+
+        while (time < duration)
+        {
+            time += Time.deltaTime;
+            float newIntensity = Mathf.Lerp(startIntensity, targetIntensity, time / duration);
+            float newSmoothness = Mathf.Lerp(startSmoothness, targetIntensity, time / duration);
+
+            vignette.intensity.Override(newIntensity);
+            vignette.smoothness.Override(newSmoothness);
+            yield return null;
+        }
+
+        // 정확한 목표값으로 설정 완료
+        vignette.intensity.Override(targetIntensity);
+    }
 }
 
