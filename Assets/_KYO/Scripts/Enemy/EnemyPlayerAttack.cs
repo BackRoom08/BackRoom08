@@ -69,12 +69,12 @@ public class EnemyPlayerAttack : MonoBehaviour
         agent.enabled = false; 
         if (mainAiScript != null) mainAiScript.enabled = false;
 
-        // 3. 적을 플레이어 눈 앞에 위치시키기 (이제 적은 순간이동하지 않고 충돌 위치에 머무름)
+        // 3. 적을 플레이어 눈 앞에 위치시키기
         Transform playerCamera = Camera.main.transform;
         
         transform.rotation = Quaternion.LookRotation(playerCamera.position - transform.position);
         
-        // Smiler의 X, Z축 회전을 0으로 강제하여 기울어지지 않게 함
+        // X, Z축 회전을 0으로 강제하여 기울어지지 않게 함
         Vector3 currentSmilerEuler = transform.rotation.eulerAngles;
         transform.rotation = Quaternion.Euler(0, currentSmilerEuler.y, 0);
 

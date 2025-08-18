@@ -2,9 +2,7 @@
 using UnityEngine;
 using UnityEngine.Events;
 
-/// <summary>
-/// 각 맵의 주요 설정을 관리하는 매니저 클래스입니다.
-/// </summary>
+
 public class MapManager : MonoBehaviour
 {
 
@@ -82,14 +80,16 @@ public class MapManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 지정된 ID의 문을 여는 이벤트를 처리합니다.
+    /// 지정된 ID의 문을 여는 이벤트.
     /// </summary>
     /// <param name="doorId">문의 고유 ID</param>
     public void OpenDoor(int doorId)
     {
         Debug.Log($"MapManager: {doorId}번 문을 엽니다.");
-        // 여기에 실제 문을 여는 로직을 구현합니다.
+        // 
         // 예: 애니메이션 실행, 콜라이더 비활성화 등
     }
+   
+    
 }
 

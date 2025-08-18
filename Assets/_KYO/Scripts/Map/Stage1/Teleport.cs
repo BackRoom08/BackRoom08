@@ -20,7 +20,6 @@ public class Teleport : MonoBehaviour
             }
             else
             {
-                // 혹시 CharacterController 없으면 그냥 이동
                 other.transform.position = respawnPoint.position;
             }
 
