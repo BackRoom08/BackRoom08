@@ -24,13 +24,13 @@ public class PasswordClearMap : MonoBehaviour
     void Awake()
     {
         GameObject canvas = GameObject.Find("Canvas");
-        GameObject suitObject = GameObject.Find("Mesh_protective suit");
+        GameObject suitObject = GameObject.Find("Player");
         if (canvas != null)
         {
-            // 모든 자식 중에서 GameObject 이름이 "P_PasswordUI"인 것 찾기
+            //비밀번호 ui 찾아서 인스펙터 자동 연결
             passwordUI = canvas.GetComponentsInChildren<Transform>(true)
                                .FirstOrDefault(t => t.name == "P_PasswordUI")?.gameObject;
-
+            //e키를 눌러상호작용 문구가 뜨는 텍스트 인스펙터에서 자동연결
             interactText = canvas.GetComponentsInChildren<Text>(true)
                                 .FirstOrDefault(t => t.name == "P_PasswordText")?.gameObject;
 
@@ -46,7 +46,7 @@ public class PasswordClearMap : MonoBehaviour
             if (lookTransform != null)
             {
                 cameraControllerObject = lookTransform.gameObject;
-            }
+            }//시점제어용오브젝트 인스펙터 자동연결
         }
     }
         void Update()
