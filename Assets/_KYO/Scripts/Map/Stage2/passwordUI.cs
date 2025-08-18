@@ -1,5 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,12 +10,93 @@ public class PasswordUI : MonoBehaviour
     //passwordUI = computerPassword를 넣어줌
     //cameraController = 플레이어 프리팹의 look 게임 오브젝트
 
-    public Text[] digitTexts; // 4개의 숫자칸
     public string correctPW = "1111"; //비밀번호
     private string currentInput = ""; //입력중인 비밀번호
 
+    public Text[] digitTexts = new Text[4]; // 4개의 숫자칸
     public GameObject passwordUI; //UI
     public GameObject cameraControllerObject;
+
+    void Awake()
+    {
+     //처음에 시작할때는 다 none으로 뜨지만 컴퓨터오브젝트로 비밀번호UI를 띄우면 자동연결됨
+        // 고정할 플레이어의 시점 look 오브젝트 찾아서 인스펙터 자동연결
+        GameObject player = GameObject.Find("Player");
+        if (player == null)
+        {
+            Debug.LogError("Player 오브젝트를 찾을 수 없습니다.");
+            return;
+        }
+
+        Transform lookTransform = player.transform.Find("Look");
+        if (lookTransform == null)
+        {
+            Debug.LogError("Player의 자식 오브젝트 중 'Look'을 찾을 수 없습니다.");
+            return;
+        }
+        cameraControllerObject = lookTransform.gameObject;
+
+
+        // P_PasswordUI 찾아서 인스펙터 자동 연결
+        GameObject canvas = GameObject.Find("Canvas");
+        if (canvas == null)
+        {
+            Debug.LogError("Canvas를 찾을 수 없습니다.");
+            return;
+        }
+
+        Transform pwTransform = canvas.GetComponentsInChildren<Transform>(true)
+                                      .FirstOrDefault(t => t.name == "P_PasswordUI");
+
+        if (pwTransform == null)
+        {
+            Debug.LogError("Canvas 안에서 P_PasswordUI를 찾을 수 없습니다.");
+            return;
+        }
+
+        passwordUI = pwTransform.gameObject;
+
+        // 🔹 digitTexts를 찾아서 인스펙터 자동 연결.
+        Transform passwordArea = transform.Find("passwordArea");
+        if (passwordArea == null)
+        {
+            Debug.LogError("passwordArea를 찾을 수 없습니다.");
+            return;
+        }
+
+        for (int i = 0; i < 4; i++)
+        {
+            string passwordName = $"password({i + 1})";
+            Transform passwordTransform = passwordArea.Find(passwordName);
+            if (passwordTransform == null)
+            {
+                Debug.LogError($"{passwordName}을 찾을 수 없습니다.");
+                continue;
+            }
+
+            string placeholderName = $"Placeholder{i + 1}";
+            Transform placeholderTransform = passwordTransform.Find(placeholderName);
+            if (placeholderTransform == null)
+            {
+                Debug.LogError($"{placeholderName}을 찾을 수 없습니다.");
+                continue;
+            }
+
+            Text textComponent = placeholderTransform.GetComponent<Text>();
+            if (textComponent == null)
+            {
+                Debug.LogError($"{placeholderName}에 Text 컴포넌트가 없습니다.");
+                continue;
+            }
+            digitTexts[i] = textComponent;
+        }
+    }
+
+
+
+
+
+
     void Update()
     {
         //if (Input.GetKeyDown(KeyCode.E))
