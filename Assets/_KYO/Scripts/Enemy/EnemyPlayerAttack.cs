@@ -61,8 +61,8 @@ public class EnemyPlayerAttack : MonoBehaviour
     private IEnumerator AttackCoroutine(GameObject playerObject)
     {
         // 페이드 아웃
-        MapManager.Instance.FadeOut(1.5f);
-        yield return new WaitForSeconds(1.5f);
+        MapManager.Instance.FadeOut(1f);
+        yield return new WaitForSeconds(1f);
 
         // 플레이어 조작 비활성화
         playerObject.GetComponent<PlayerMove>().enabled = false;
@@ -70,13 +70,6 @@ public class EnemyPlayerAttack : MonoBehaviour
         
         var cameraScript = playerObject.GetComponentInChildren<NewBehaviourScript>();
         if (cameraScript != null) cameraScript.enabled = false;
-
-        // Cinemachine Brain 비활성화 (카메라 제어권 확보)
-        //var cinemachineBrain = Camera.main.GetComponent<Cinemachine.CinemachineBrain>();
-        //if (cinemachineBrain != null)
-        //{
-        //    cinemachineBrain.enabled = false;
-        //}
 
         // AI 비활성화
         agent.enabled = false; 
@@ -97,7 +90,7 @@ public class EnemyPlayerAttack : MonoBehaviour
         //  애니메이션 시간만큼 대기
         yield return new WaitForSeconds(attackAnimationDuration);
 
-        Debug.Log("게임 오버!");
+        Debug.Log("게임 오버 부분 붙여서 넣기 !");
     
 
     }
