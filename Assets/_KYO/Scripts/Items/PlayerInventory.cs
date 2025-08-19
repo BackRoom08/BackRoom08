@@ -16,9 +16,53 @@ public class PlayerInventory : MonoBehaviour
     public Transform HandTransform; //손위치
     private GameObject currentHeldItem; //현재 손에든 아이템
     private int selectedIndex = -1; //현재 선택된 슬롯의 인덱스 변수. 초기값은 아무것도 없는 상태
-    
 
 
+    void Awake()
+    {
+        GameObject player = GameObject.Find("Player");
+        if (player != null)
+        {
+            Transform handPoint = player.transform.Find("root/pelvis/spine_01/spine_02/spine_03/clavicle_l/upperarm_l/lowerarm_l/hand_l/HandPoint");
+            if (handPoint != null)
+            {
+                HandTransform = handPoint;
+            }
+        }//플레이어 손위치 자동으로 인스펙터에서 연결
+
+
+            // Canvas 아래의 InventoryArea를 전체 씬에서 찾기
+            GameObject inventoryAreaGO = GameObject.Find("InventoryArea");
+        if (inventoryAreaGO == null)
+        {
+            Debug.LogError("InventoryArea 오브젝트를 찾을 수 없습니다.");
+            return;
+        }
+
+        Transform inventoryArea = inventoryAreaGO.transform;
+
+        // IconBackGround 안의 자식들 중에서 Icon1~Icon5를 찾기
+        int foundCount = 0;
+        foreach (Transform background in inventoryArea)
+        {
+            foreach (Transform child in background)
+            {
+                if (child.name.StartsWith("Icon"))
+                {
+                    int index;
+                    if (int.TryParse(child.name.Substring(4), out index) && index >= 1 && index <= 5)
+                    {
+                        Image iconImage = child.GetComponent<Image>();
+                        if (iconImage != null)
+                        {
+                            itemSlot[index - 1] = iconImage;
+                            foundCount++;
+                        }//인벤토리 5칸의 이미지를 찾아서 인스펙터 자동 연결
+                    }
+                }
+            }
+        }
+    }
         void Start()
     {
      DeselectAllSlot();
@@ -77,7 +121,8 @@ public class PlayerInventory : MonoBehaviour
                 rb.useGravity = false;
             }
         }
-    }
+     }
+    
     public void AddItem(ItemDatas newItem)
     {
         for (int i = 0; i < items.Length; i++)

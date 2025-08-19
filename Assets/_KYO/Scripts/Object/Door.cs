@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Door : MonoBehaviour
+public class Door : MonoBehaviour, IInteractable
 {
 
     [SerializeField][Tooltip("열고닫을 애니메이션")] private Animator animator;
@@ -18,4 +18,8 @@ public class Door : MonoBehaviour
         animator.SetBool("isOpen", !isOpen );
     }
 
+    public void Interact()
+    {
+        ToggleDoor();
+    }
 }

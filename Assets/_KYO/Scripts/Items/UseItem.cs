@@ -9,6 +9,23 @@ public class ItemUser : MonoBehaviour
     public PlayerInventory inventory;
     public PlayerMove playermove;
 
+    void Awake()
+    {
+        GameObject playerGO = GameObject.Find("Player");
+        if (playerGO != null)
+        {
+            playerStatus = playerGO.GetComponent<PlayerStatus>();
+            playermove = playerGO.GetComponent<PlayerMove>();
+        }
+        //인스펙터에서 playermove와 playerstatus 자동연결
+
+            GameObject inventoryGO = GameObject.Find("Canvas/P_PlayerUI/P_InventoryController");
+        if (inventoryGO != null)
+        {
+            inventory = inventoryGO.GetComponent<PlayerInventory>();
+        }
+        //인스펙터에서 playerinventory 자동연결
+    }
     void Update()
     {
         currentItem = inventory.GetSelectedItem();
