@@ -1,8 +1,11 @@
-﻿using System.Collections;
+﻿using Highlighters;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Localization.SmartFormat.Core.Parsing;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class PasswordUI : MonoBehaviour
@@ -16,98 +19,119 @@ public class PasswordUI : MonoBehaviour
     public Text[] digitTexts = new Text[4]; // 4개의 숫자칸
     public GameObject passwordUI; //UI
     public GameObject cameraControllerObject;
+    private bool isUIInitialized = false;
 
-    void Awake()
+
+    void OnEnable()
     {
-     //처음에 시작할때는 다 none으로 뜨지만 컴퓨터오브젝트로 비밀번호UI를 띄우면 자동연결됨
-        // 고정할 플레이어의 시점 look 오브젝트 찾아서 인스펙터 자동연결
-        GameObject player = GameObject.Find("Player");
-        if (player == null)
-        {
-            Debug.LogError("Player 오브젝트를 찾을 수 없습니다.");
-            return;
-        }
-
-        Transform lookTransform = player.transform.Find("Look");
-        if (lookTransform == null)
-        {
-            Debug.LogError("Player의 자식 오브젝트 중 'Look'을 찾을 수 없습니다.");
-            return;
-        }
-        cameraControllerObject = lookTransform.gameObject;
-
-
-        // P_PasswordUI 찾아서 인스펙터 자동 연결
-        GameObject canvas = GameObject.Find("Canvas");
-        if (canvas == null)
-        {
-            Debug.LogError("Canvas를 찾을 수 없습니다.");
-            return;
-        }
-
-        Transform pwTransform = canvas.GetComponentsInChildren<Transform>(true)
-                                      .FirstOrDefault(t => t.name == "P_PasswordUI");
-
-        if (pwTransform == null)
-        {
-            Debug.LogError("Canvas 안에서 P_PasswordUI를 찾을 수 없습니다.");
-            return;
-        }
-
-        passwordUI = pwTransform.gameObject;
-
-        // 🔹 digitTexts를 찾아서 인스펙터 자동 연결.
-        Transform passwordArea = transform.Find("passwordArea");
-        if (passwordArea == null)
-        {
-            Debug.LogError("passwordArea를 찾을 수 없습니다.");
-            return;
-        }
-
-        for (int i = 0; i < 4; i++)
-        {
-            string passwordName = $"password({i + 1})";
-            Transform passwordTransform = passwordArea.Find(passwordName);
-            if (passwordTransform == null)
-            {
-                Debug.LogError($"{passwordName}을 찾을 수 없습니다.");
-                continue;
-            }
-
-            string placeholderName = $"Placeholder{i + 1}";
-            Transform placeholderTransform = passwordTransform.Find(placeholderName);
-            if (placeholderTransform == null)
-            {
-                Debug.LogError($"{placeholderName}을 찾을 수 없습니다.");
-                continue;
-            }
-
-            Text textComponent = placeholderTransform.GetComponent<Text>();
-            if (textComponent == null)
-            {
-                Debug.LogError($"{placeholderName}에 Text 컴포넌트가 없습니다.");
-                continue;
-            }
-            digitTexts[i] = textComponent;
-        }
+        SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
-
-
-
-
-
-    void Update()
+    void OnDisable()
     {
-        //if (Input.GetKeyDown(KeyCode.E))
-        //{
-        //    OpenPasswordUI();
-        //}
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
 
-        //if (Input.GetKeyDown(KeyCode.Escape))
-        //{
-        //    ClosePasswordUI();
-        //}
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        StartCoroutine(InitializeUI());
+    }
+
+    private IEnumerator InitializeUI()
+    {
+        // 모든 GameObject 중에서 Canvas 찾기
+        GameObject canvas = Resources.FindObjectsOfTypeAll<GameObject>()
+            .FirstOrDefault(go => go.name == "Canvas");
+
+        if (canvas == null)
+        {
+            yield break;
+        }
+
+        // Canvas의 자식 중 P_PasswordUI 찾기 비활성화여도 찾음
+        GameObject passwordUIObj = canvas.GetComponentsInChildren<Transform>(true)
+            .Select(t => t.gameObject)
+            .FirstOrDefault(go => go.name == "P_PasswordUI");
+
+        if (passwordUIObj == null)
+        {
+            yield break;
+        }
+        passwordUI = passwordUIObj;
+
+        // P_PasswordUI의 자식 중 passwordArea 찾기 비활성화여도 찾음
+        GameObject passwordAreaObj = passwordUIObj.GetComponentsInChildren<Transform>(true)
+            .Select(t => t.gameObject)
+            .FirstOrDefault(go => go.name == "passwordArea");
+
+        if (passwordAreaObj == null)
+        {
+            yield break;
+        }
+
+        // digitTexts 연결
+        bool allDigitsConnected = true;
+
+        for (int i = 0; i < 4; i++) //4개의 패스워드 입력칸을 하나씩 처리함.
+        {
+            string pwName = $"password({i + 1})";
+            string placeholderName = $"Placeholder{i + 1}"; //"password(1)", "Placeholder1" 같은 이름을 동적으로 생성.
+
+            GameObject passwordObj = passwordAreaObj.GetComponentsInChildren<Transform>(true)
+                .Select(t => t.gameObject)
+                .FirstOrDefault(go => go.name == pwName); //password의 자식들중에서 해당이름을 가진 오브젝트를 찾음
+
+            if (passwordObj == null)
+            {             
+                allDigitsConnected = false;
+                continue; //못찾으면 실패로 해두고 다음으로 넘어감
+            }
+
+            GameObject placeholderObj = passwordObj.GetComponentsInChildren<Transform>(true)
+                .Select(t => t.gameObject)
+                .FirstOrDefault(go => go.name == placeholderName); //password의 자식중 placeholder를 찾음
+
+            if (placeholderObj == null)
+            {
+                allDigitsConnected = false;
+                continue; //못찾으면 실패로 해두고 다음으로 넘어감
+            }
+
+            Text textComponent = placeholderObj.GetComponent<Text>();
+            if (textComponent == null) //Placeholder 오브젝트에서 Text 컴포넌트를 가져옴.
+
+            {
+                allDigitsConnected = false;
+                continue; //못찾으면 실패로 해두고 다음으로 넘어감
+            }
+
+            digitTexts[i] = textComponent;
+        }
+
+        if (!allDigitsConnected)
+        { //4개중 1개라도 연결 실패면 코루틴 종료
+            yield break;
+        }
+
+        // Player 오브젝트 찾기
+        GameObject playerObj = Resources.FindObjectsOfTypeAll<GameObject>()
+            .FirstOrDefault(go => go.name == "Player"); //Player를 전체에서 검색후 저장
+
+        if (playerObj == null)
+        {
+            yield break;
+        }
+
+        GameObject lookObj = playerObj.GetComponentsInChildren<Transform>(true)
+            .Select(t => t.gameObject)
+            .FirstOrDefault(go => go.name == "Look");//- Player의 자식 중 "Look"이라는 이름을 가진 오브젝트를 찾음. 카메라 컨트롤용일 가능성이 높음.
+
+        if (lookObj == null)
+        {
+            yield break;
+        }
+        cameraControllerObject = lookObj; //오브젝트를 카메라 컨트롤용 변수에 저장.
+        isUIInitialized = true; //UI 초기화가 성공적으로 끝났음을 표시하는 플래그 설정
     }
 
     public void PressNumber(string number)
@@ -144,6 +168,15 @@ public class PasswordUI : MonoBehaviour
             {
                 Debug.Log("통과");
                 GameManager.Instance.CompleteStage2();
+
+                // 비활성화된 오브젝트까지 포함해서 전체 Transform에서 찾기
+                Transform[] allTransforms = Resources.FindObjectsOfTypeAll<Transform>();
+                Transform found = allTransforms.FirstOrDefault(t => t.name == "NextMapTrigger");
+
+                if (found != null)
+                {
+                    found.gameObject.SetActive(true);
+                }
             }
             else
             {
@@ -156,20 +189,22 @@ public class PasswordUI : MonoBehaviour
 
     private void UpdateDisplay()
     {
-        for (int i = 0; i < digitTexts.Length; i++) //4칸을 순회하며 하나씩 처리
+        for (int i = 0; i < digitTexts.Length; i++)
         {
+            if (digitTexts[i] == null)
+            {
+                throw new System.Exception($"digitTexts[{i}]가 null입니다. UI 연결 실패.");
+            }
+
             digitTexts[i].text = i < currentInput.Length ? currentInput[i].ToString() : "";
-            //입력된 숫자는 표시하고, 입력하지 않은 칸은 빈칸으로 표시
         }
     }
-
     public void OpenPasswordUI()
     {
         passwordUI.SetActive(true);
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
-
     public void ClosePasswordUI()
     {
         currentInput = ""; //ui가 한번 닫혔으므로 초기화

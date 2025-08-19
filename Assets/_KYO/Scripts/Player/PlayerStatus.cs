@@ -14,6 +14,7 @@ public class PlayerStatus : MonoBehaviour
     private int currentMentalHP;
     public Animator anim;
     public Text MentalText;
+    private bool isMentalDamageActive = false; // 정신력 감소 활성화 여부
 
     void Awake()
     {
@@ -53,38 +54,24 @@ public class PlayerStatus : MonoBehaviour
         while (!isDead) //안죽었으면
         {
             yield return new WaitForSeconds(MentalInterval);
-
-            currentMentalHP -= MentalDamage; //코루틴 시간마다 정신력 감소
-            currentMentalHP = Mathf.Max(currentMentalHP, 0); //최소값 0으로 제한
-            MentalUI();
-            //Debug.Log("현재 정신력 : " + currentMentalHP);
-
-            if (currentMentalHP <= 0)
+            if (isMentalDamageActive) // 조건이 true일 때만 감소
             {
-                Die(); //사망
-            }
+                currentMentalHP -= MentalDamage; //코루틴 시간마다 정신력 감소
+                currentMentalHP = Mathf.Max(currentMentalHP, 0); //최소값 0으로 제한
+                MentalUI();
+                //Debug.Log("현재 정신력 : " + currentMentalHP);
 
-            void Die()
-            {
-                isDead = true;
-                Debug.Log("사망");
-                anim.SetTrigger("Dead");
-
-                PlayerMove moveScript = GetComponent<PlayerMove>();
-                if (moveScript != null)
+                if (currentMentalHP <= 0)
                 {
-                    moveScript.enabled = false;     //비활성화   
+                    Debug.Log("사망씬 넣어주세요");
+                    // 사망씬 넣어주세요
                 }
-                StartCoroutine(RemoveAfterDelay(3f)); //3초뒤 파괴
             }
-
-
         }
     }
-
-    IEnumerator RemoveAfterDelay(float delay)
+    public void SetMentalDamageActive(bool isActive)
     {
-        yield return new WaitForSeconds(delay);
-        Destroy(gameObject);
+        isMentalDamageActive = isActive;
     }
+
 }

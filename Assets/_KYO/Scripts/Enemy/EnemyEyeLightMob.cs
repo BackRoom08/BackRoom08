@@ -23,16 +23,14 @@ public class EnemyEyeLightMob : EnemyController
         animator = GetComponentInChildren<Animator>(); // 애니메이터를 찾습니다.
         agent.acceleration = 30f; // NavMeshAgent의 가속도를 30으로 설정
 
-        if (player == null)
-        {
-            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-            if (playerObj != null)
-                player = playerObj.transform;
-        }//플레이어 탐색하여 인스펙터에 자동 연결
+        //GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+        //if (playerObj != null)
+        //    player = playerObj.transform;
 
         // 공격 스크립트 컴포넌트를 가져옴
         enemyAttack = GetComponent<EnemyPlayerAttack>();
     }
+
 
     protected override void Update()
     {

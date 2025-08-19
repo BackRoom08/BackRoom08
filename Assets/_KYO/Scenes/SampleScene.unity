@@ -1434,6 +1434,93 @@ MonoBehaviour:
   loadingPanel: {fileID: 27432644}
   loadingBar: {fileID: 27432643}
   settingUI: {fileID: 309620419}
+--- !u!1 &1377627394
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1377627395}
+  - component: {fileID: 1377627396}
+  m_Layer: 0
+  m_Name: GameManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1377627395
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1377627394}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2044855398}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1377627396
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1377627394}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db06cac8bde92154d8aebc8d7918385e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  PlayerData:
+    maxMentalHP: 0
+    currentMentalHP: 0
+    mentalInterval: 0
+    mentalDamage: 0
+    maxStamina: 0
+    currentStamina: 0
+    staminaUseRate: 0
+    staminaHeal: 0
+    staminaHealDelay: 0
+    moveSpeed: 0
+    sprintSpeed: 0
+    crouchSpeed: 0
+    jumpForce: 0
+    crouchHeight: 0
+    standHeight: 0
+    position: {x: 0, y: 0, z: 0}
+    isCrouching: 0
+    isDead: 0
+    hasFlashlight: 0
+    equippedFlashlightName: 
+    flashlightID: 
+    isFlashlightOn: 0
+    inventoryItems:
+    - uid: 0
+      itemName: 
+      type: 0
+    - uid: 0
+      itemName: 
+      type: 0
+    - uid: 0
+      itemName: 
+      type: 0
+    - uid: 0
+      itemName: 
+      type: 0
+    - uid: 0
+      itemName: 
+      type: 0
+  allItemDatas:
+  - {fileID: 11400000, guid: 240d92df0dd83854b8a8874bdf6c6c21, type: 2}
+  - {fileID: 11400000, guid: 3033e48c64f203742b654d126ed000c9, type: 2}
+  - {fileID: 11400000, guid: e03ba7979dd397649a8263fd4fda972f, type: 2}
 --- !u!1 &1490539788
 GameObject:
   m_ObjectHideFlags: 0
@@ -1513,6 +1600,7 @@ Transform:
   m_Children:
   - {fileID: 886533044}
   - {fileID: 1490539789}
+  - {fileID: 1377627395}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807

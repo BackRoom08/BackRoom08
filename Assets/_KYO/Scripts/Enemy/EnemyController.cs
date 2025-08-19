@@ -216,8 +216,11 @@ public class EnemyController : MonoBehaviour
     
     protected virtual void Update()
     {
-        if (player == null) return;
-        
+        if (player == null)
+        {
+            return;
+        }
+
         // 애니메이션 Speed값
         curSpeed = agent.velocity.magnitude;
         animator.SetFloat("Speed", curSpeed);
