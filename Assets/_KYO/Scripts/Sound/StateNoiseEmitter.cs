@@ -34,13 +34,13 @@ public class StateNoiseEmitter : MonoBehaviour
     [SerializeField, Tooltip("탈진(호흡) 세기 배수")] private float exhaustLoudMul = 1.8f;
     [SerializeField, Range(0,1f), Tooltip("호흡 반경 감쇄")] public float breathRangeMul = 0.75f;
     
-    bool  isActive = false;
+    [SerializeField, Tooltip("인식 활성화(확인용)")]bool  isActive = false;
     float currentLoudMul = 1f;
     float currentRangeMul = 1f;
     
     // 중복 방지
     AudioClip currentClip;
-    CharacterMoveState currentState = CharacterMoveState.Idle;
+    [SerializeField, Tooltip("사운드 현재 상태")]CharacterMoveState currentState = CharacterMoveState.Idle;
 
     void Awake()
     {
@@ -55,6 +55,7 @@ public class StateNoiseEmitter : MonoBehaviour
     }
     
     // 사운드 필요한곳에서 호출
+    // 현재 스위치 문에 없는건 자동으로 stop됨
     public void SetState(CharacterMoveState state)
     {
         if(state == currentState) return;

@@ -54,7 +54,7 @@ public class PlayerMove : MonoBehaviour
 
         Vector3 inputValue = Vector3.ClampMagnitude(new Vector3(x, 0, z), 1);
         bool isMovement = inputValue.magnitude > 0.01f; //입력이 있는지 확인
-
+        
         if (Input.GetKeyDown(KeyCode.LeftControl))
         { //앉고 일어나기
             isCrouch = !isCrouch;
@@ -123,9 +123,15 @@ public class PlayerMove : MonoBehaviour
             anim.SetBool("CrouchWalk", false);
             noise.SetState(CharacterMoveState.Walk);
            // print("player Walk");
+           var st = anim.GetCurrentAnimatorStateInfo(0);
+           if (st.IsName("Idle"))
+           {
+               noise.SetState(CharacterMoveState.Idle);
+               // print("Idle 호출");
+           }
         }
         // 현재 상태에 따라 속도를 바꿈
-
+        
         if (isSprint && isMovement)
         {
             currentStamina -= StaminaUseRate * Time.deltaTime;
