@@ -1384,6 +1384,7 @@ MonoBehaviour:
   sensSlider: {fileID: 309620414}
   languageValueText: {fileID: 309620413}
   screenModeValueText: {fileID: 309620412}
+  langIndex: 0
 --- !u!1 &886533043
 GameObject:
   m_ObjectHideFlags: 0

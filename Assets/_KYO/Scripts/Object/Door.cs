@@ -18,7 +18,7 @@ public class Door : MonoBehaviour, IInteractable
         animator.SetBool("isOpen", !isOpen );
     }
 
-    public void Interact() 
+    public void Interact()
     {
         ToggleDoor();
     }
