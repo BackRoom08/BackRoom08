@@ -27,10 +27,11 @@ public class HearingSensor : MonoBehaviour
             perceived *= 0.35f; // 벽 감쇠
         }
 
+        // 사운드 감지
         if (perceived >= hearThreshold)
         {
             // GetComponent<YourAIController>()?.OnHearNoise(e.Position, perceived);
-            print($"[{name}] heard noise at {e.Position} (power {perceived:F2})");
+            //print($"[{name}] heard noise at {e.Position} (power {perceived:F2})");
         }
     }
 }
