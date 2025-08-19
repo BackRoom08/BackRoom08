@@ -61,8 +61,8 @@ public class EnemyPlayerAttack : MonoBehaviour
     private IEnumerator AttackCoroutine(GameObject playerObject)
     {
         // 페이드 아웃
-        MapManager.Instance.FadeOut(1f);
-        yield return new WaitForSeconds(1f);
+        MapManager.Instance.FadeOut(0.1f);
+        yield return new WaitForSeconds(0.1f);
 
         // 플레이어 조작 비활성화
         playerObject.GetComponent<PlayerMove>().enabled = false;
@@ -85,11 +85,13 @@ public class EnemyPlayerAttack : MonoBehaviour
         MapManager.Instance.FadeIn(1.5f);
 
         // 애니메이션 실행
+        yield return new WaitForSeconds(2f);
         animator.SetTrigger(attackTriggerName);
 
         //  애니메이션 시간만큼 대기
         yield return new WaitForSeconds(attackAnimationDuration);
 
+        UIManager.Instance.ShowDeathUI();
         Debug.Log("게임 오버 부분 붙여서 넣기 !");
     
 

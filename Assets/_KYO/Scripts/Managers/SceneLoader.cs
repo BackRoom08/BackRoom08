@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -24,6 +24,7 @@ public class SceneLoader : MonoBehaviour
         if (autoLoadOnStart && !string.IsNullOrEmpty(firstSceneToLoad))
             StartCoroutine(AutoKickoff());
     }
+
     
     IEnumerator AutoKickoff()
     {
@@ -42,6 +43,11 @@ public class SceneLoader : MonoBehaviour
     public void LoadSceneAdditive(string sceneName, bool showLoading)
     {
         StartCoroutine(CoLoad(sceneName, showLoading));
+    }
+    public void ReStartScene()
+    {
+        LoadSceneAdditive(SceneManager.GetActiveScene().name, true);
+        UIManager.Instance.CloseDeadUI();
     }
 
     IEnumerator CoLoad(string sceneName, bool showLoading)
@@ -84,7 +90,8 @@ public class SceneLoader : MonoBehaviour
         for (int i = SceneManager.sceneCount - 1; i >= 0; --i)
         {
             var s = SceneManager.GetSceneAt(i);
-            if (s.name != sceneName && s.isLoaded && s.name != bootstrapSceneName)
+            //if (s.name != sceneName && s.isLoaded && s.name != bootstrapSceneName)
+            if (s != loaded && s.isLoaded && s.name != bootstrapSceneName)   // 조건 변경 씬을 다시로드할경우를 대비
                 yield return SceneManager.UnloadSceneAsync(s);
         }
         //print("444444");
@@ -97,5 +104,28 @@ public class SceneLoader : MonoBehaviour
         //print("loaded");
 
         // (옵션) 로딩 종료 후 커서/타임스케일은 UIManager가 관리
+    }
+    private void Update()
+    {
+        // 테스트용 씬 이동 (Ctrl + F1, F2, ...)
+        if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
+        {
+            if (Input.GetKeyDown(KeyCode.F1))
+            {
+                LoadSceneAdditive("Stage1", true);
+            }
+            if (Input.GetKeyDown(KeyCode.F2))
+            {
+                LoadSceneAdditive("Stage2", true);
+            }
+            if (Input.GetKeyDown(KeyCode.F3))
+            {
+                LoadSceneAdditive("Stage3", true);
+            }
+            if (Input.GetKeyDown(KeyCode.F4))
+            {
+                LoadSceneAdditive("Stage4", true);
+            }
+        }
     }
 }

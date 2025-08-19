@@ -76,7 +76,7 @@ MonoBehaviour:
   acceleration: 50
   waitLastPosition: 1
   lastPosArriveThreshold: 0.5
-  isPlayerInHide: 1
+  isPlayerInHide: 0
   currState: 0
   arriveTimer: 1
 --- !u!195 &1291004788463409294

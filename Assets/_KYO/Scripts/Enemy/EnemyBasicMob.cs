@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -22,4 +22,14 @@ public class EnemyBasicMob : EnemyController
         isChasing = false; // 추격 시작마다 리셋
         yield return base.ChaseRoutine();
     }
-}
+
+    protected virtual void OnEnable()
+    {
+        // PlayerMove 컴포넌트를 가진 오브젝트를 찾아 플레이어로 설정
+        PlayerMove playerObject = FindObjectOfType<PlayerMove>();
+        if (playerObject != null)
+        {
+            player = playerObject.transform;
+        }
+    }
+    }
