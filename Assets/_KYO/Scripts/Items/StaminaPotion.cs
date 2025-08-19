@@ -12,7 +12,6 @@ public class StaminaPotion : ItemDatas
         if (playermove != null)
         {
             playermove.HealStamina(HealStaminaRate);
-            Debug.Log("냠냠 불스원샷");
             playermove.anim.SetBool("Drink", true);
             playermove.StartCoroutine(ResetDrink(playermove.anim));
         }

@@ -11,8 +11,7 @@ public class HealItem : ItemDatas
     {
         if (playerstatus != null)
         {
-            playerstatus.HealMentalHP(HealMentalHP);
-            Debug.Log("냠냠 회복중");          
+            playerstatus.HealMentalHP(HealMentalHP);         
         }
     }
 

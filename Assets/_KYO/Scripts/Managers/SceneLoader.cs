@@ -8,7 +8,7 @@ public class SceneLoader : MonoBehaviour
 
     [SerializeField] private string bootstrapSceneName = "SampleScene"; // 전역 시스템 담긴 씬(선택)
     [SerializeField] private float minLoadingTime = 2f; // 로딩화면 최소 노출
-    
+
     [SerializeField] private bool autoLoadOnStart = true;
     [SerializeField] private string firstSceneToLoad = "StartScene";
 
@@ -25,29 +25,24 @@ public class SceneLoader : MonoBehaviour
             StartCoroutine(AutoKickoff());
     }
 
-    
+
     IEnumerator AutoKickoff()
     {
         yield return null;
         //LoadSceneAdditive(firstSceneToLoad);
         LoadSceneAdditive(firstSceneToLoad, false);
     }
-    
+
     // 씬 전환 사용
     // 아래 그대로 호출 씬이름만 넣어서
     // SceneLoader.Instance.LoadSceneAdditive("본인 씬", true);
     // 예시
     // SceneLoader.Instance.LoadSceneAdditive("Stage1", true);
-    
+
     // 씬 전환 로더
     public void LoadSceneAdditive(string sceneName, bool showLoading)
     {
         StartCoroutine(CoLoad(sceneName, showLoading));
-    }
-    public void ReStartScene()
-    {
-        LoadSceneAdditive(SceneManager.GetActiveScene().name, true);
-        UIManager.Instance.CloseDeadUI();
     }
 
     IEnumerator CoLoad(string sceneName, bool showLoading)
@@ -90,8 +85,7 @@ public class SceneLoader : MonoBehaviour
         for (int i = SceneManager.sceneCount - 1; i >= 0; --i)
         {
             var s = SceneManager.GetSceneAt(i);
-            //if (s.name != sceneName && s.isLoaded && s.name != bootstrapSceneName)
-            if (s != loaded && s.isLoaded && s.name != bootstrapSceneName)   // 조건 변경 씬을 다시로드할경우를 대비
+            if (s.name != sceneName && s.isLoaded && s.name != bootstrapSceneName)
                 yield return SceneManager.UnloadSceneAsync(s);
         }
         //print("444444");

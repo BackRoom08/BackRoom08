@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class PasswordClearMap : MonoBehaviour
@@ -21,35 +22,43 @@ public class PasswordClearMap : MonoBehaviour
     private bool isOnMouse = false; //마우스가 올라왔나 확인
     private bool isEkeydown = false;
 
-    void Awake()
+    void OnEnable()
     {
-        GameObject canvas = GameObject.Find("Canvas");
-        GameObject suitObject = GameObject.Find("Player");
-        if (canvas != null)
-        {
-            //비밀번호 ui 찾아서 인스펙터 자동 연결
-            passwordUI = canvas.GetComponentsInChildren<Transform>(true)
-                               .FirstOrDefault(t => t.name == "P_PasswordUI")?.gameObject;
-            //e키를 눌러상호작용 문구가 뜨는 텍스트 인스펙터에서 자동연결
-            interactText = canvas.GetComponentsInChildren<Text>(true)
-                                .FirstOrDefault(t => t.name == "P_PasswordText")?.gameObject;
-
-        }
-
-
-
-        if (suitObject != null)
-        {
-            // 그 자식 중 "Look" 오브젝트를 찾아서 연결
-            Transform lookTransform = suitObject.transform.Find("Look");
-
-            if (lookTransform != null)
-            {
-                cameraControllerObject = lookTransform.gameObject;
-            }//시점제어용오브젝트 인스펙터 자동연결
-        }
+        SceneManager.sceneLoaded += OnSceneLoaded;
     }
-        void Update()
+
+    void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        StartCoroutine(InitializeReferences());
+    }
+
+    IEnumerator InitializeReferences()
+    {
+        // Canvas 준비 대기
+        yield return new WaitUntil(() => GameObject.Find("Canvas") != null);
+        GameObject canvas = GameObject.Find("Canvas");
+
+        passwordUI = canvas.GetComponentsInChildren<Transform>(true)
+                           .FirstOrDefault(t => t.name == "P_PasswordUI")?.gameObject;
+
+        interactText = canvas.GetComponentsInChildren<Text>(true)
+                             .FirstOrDefault(t => t.name == "P_PasswordText")?.gameObject;
+
+        // Player 준비 대기
+        yield return new WaitUntil(() => GameObject.Find("Player") != null);
+        GameObject suitObject = GameObject.Find("Player");
+
+        Transform lookTransform = suitObject.transform.Find("Look");
+        if (lookTransform != null)
+            cameraControllerObject = lookTransform.gameObject;
+    }
+
+    void Update()
         {
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit; //레이를 쏘고 정보를 변수에 담음
