@@ -1,89 +1,122 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
     public static UIManager Instance { get; private set; }
     
-    public float masterVolume = 1.0f;       // 마스터 볼륨
-    public float bgmVolume = 1.0f;          // BGM 볼륨
-    public float sfxVolume = 1.0f;          // 효과음 볼륨
-    public float mouseSensitivity = 1.0f;   // 마우스 감도
-    public bool isFullScreen = true;        // 전체화면 여부  
-    public int currentLanguageIndex = 0; // 0: 한국어, 1: 영어
-
-    [SerializeField][Tooltip("bgm")] private AudioSource bgmAudioSource;
-    [SerializeField][Tooltip("효과음 리스트")] private List<AudioSource> sfxAudioSources;
+    [SerializeField] GameSetting settings;  // 설정 데이터
     
-    private void Awake()
+    
+    [SerializeField] GameObject settingsPanel;  // 설정창
+    [SerializeField] GameObject loadingPanel;   // 로딩창
+    [SerializeField] Slider loadingBar;  // 로딩창의 로딩바
+    
+    [SerializeField] SettingUI settingUI;
+    
+    public bool IsPaused { get; private set; }  // 설정창 On/Off
+
+    void Awake()
     {
-        if (Instance == null)
+        if (Instance) { Destroy(gameObject); return; }
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+
+        settings?.Load();
+        ShowSettings(false, force:false);
+        ShowLoading(false);
+    }
+    
+    // 설정창 토글방식으로 띄우기 On/Off
+    // 설정창 호출
+    public void ToggleSettings()
+    {
+        ShowSettings(!settingsPanel.activeSelf);
+    }
+
+    // 설정창 출현
+    public void ShowSettings(bool show, bool force = false)
+    {
+        if (settingsPanel == null) return;
+
+        if (show) settingUI?.RefreshFromData();
+        settingsPanel.SetActive(show);
+
+        if (show)
         {
-            Instance = this;
-            DontDestroyOnLoad(this);
+            PauseGame();
+            // UI 포커스
+            if (EventSystem.current == null)
+                new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
         }
         else
         {
-            Destroy(gameObject);
+            if (!force) ResumeGame();
         }
     }
-    
-    // 볼륨
-    public void SetMasterVolume(float value)
-    {
-        masterVolume = value;
-        ApplyMasterVolume();
-    }
 
-    public void SetBGMVolume(float value)
+    // 게임 멈춤
+    public void PauseGame()
     {
-        bgmVolume = value;
-        ApplyBGMVolume();
-    }
-
-    public void SetSFXVolume(float value)
-    {
-        sfxVolume = value;
-        ApplySFXVolume();
-    }
-
-    // 마우스 감도
-    public void SetMouseSensitivity(float value)
-    {
-        mouseSensitivity = value;
-    }
-
-    public void SetFullScreen(bool value)
-    {
-        isFullScreen = value;
-        ApplyFullScreen();
+        if (IsPaused) return;
+        Time.timeScale = 0f;
+        AudioListener.pause = true;
+        IsPaused = true;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
     
-    public void ApplyMasterVolume()
+    // 게임 재진행
+    public void ResumeGame()
     {
-        AudioListener.volume = masterVolume;
-    }
-    
-    public void ApplyBGMVolume()
-    {
-        if(bgmAudioSource != null)
-            bgmAudioSource.volume = bgmVolume;
-    }
-
-    public void ApplySFXVolume()
-    {
-        foreach (var sfx in sfxAudioSources)
+        if (!IsPaused) return;
+        Time.timeScale = 1f;
+        AudioListener.pause = false;
+        IsPaused = false;
+        // 조건 현재 플레이씬인지
+        var activeScene = SceneManager.GetActiveScene().name;
+        
+        // 나중에 앤딩씬도 넣어줘야함
+        if(activeScene != "StartScene")
         {
-            if(sfx != null)
-                sfx.volume = sfxVolume;
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+            //print("activeScene");
+        }
+    }
+    
+    // 플레이어만 멈추는 로직 
+    
+    // 로딩창 출연
+    public void ShowLoading(bool show)
+    {
+        if (loadingPanel) loadingPanel.SetActive(show);
+        if (show)
+        {
+            PauseGame();
+            //print("Pause");
+        }           // 로딩 중엔 게임 입력/동작 멈춤
+        else
+        {
+            ResumeGame(); 
+            //print("Resume");
         }
     }
 
-    public void ApplyFullScreen()
+    public void SetLoadingProgress(float p01)
     {
-        Screen.fullScreen = isFullScreen;
+        if (loadingBar) loadingBar.value = Mathf.Clamp01(p01);
     }
-    
+
+    // 시작씬에서의 버튼 (UI 버튼)
+    public void OnClickOpenSettings() => ToggleSettings();
+    public void OnClickCloseSettings() => ShowSettings(false);
+    public void OnClickApplySettings()
+    {
+        settings?.Save();
+        // 필요한 값들 매핑
+    }
 }

@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using UnityEngine.UI;
 public class PlayerMove : MonoBehaviour
 { //플레이어에게 붙임
     UnityEngine.CharacterController charctrl;
@@ -17,6 +17,7 @@ public class PlayerMove : MonoBehaviour
     public float StaminaUseRate = 10f; //초당 소모
     public float staminaHeal = 10f;     //초당 회복
     public float staminaHealDelay = 2f; //다시 회복까지 텀
+    public Text staminaText; // 스태미너 표시용 텍스트
 
     public Transform cam; //카메라(앉을때 높이 조절용)
     public float crouchHeight = 1f; //앉은 카메라 높이
@@ -46,6 +47,11 @@ public class PlayerMove : MonoBehaviour
         anim = GetComponent<Animator>();
         charctrl = GetComponent<UnityEngine.CharacterController>();
         noise = GetComponent<StateNoiseEmitter>();
+        GameObject staminaObj = GameObject.Find("StaminaViewUI");
+        if (staminaObj != null)
+        {
+            staminaText = staminaObj.GetComponent<Text>();
+        }
     }
     void Update()
     {
@@ -74,7 +80,7 @@ public class PlayerMove : MonoBehaviour
             anim.SetBool("Crouch", isCrouch);  
             
         }
-
+        
         if (charctrl.isGrounded && Input.GetButtonDown("Jump") && !isCrouch)
         { //땅에 있고 앉은게 아니면 점프
             gravityVelocity = JumpForce;
@@ -82,6 +88,16 @@ public class PlayerMove : MonoBehaviour
             //print("player Jump");
         }
 
+        if (Input.GetKeyDown(KeyCode.F1))
+        {
+            UIManager.Instance.ToggleSettings();
+        }
+        
+        if (anim.GetCurrentAnimatorStateInfo(0).IsName("Idle"))
+        {
+            noise.SetState(CharacterMoveState.Idle);
+        }
+        
         bool isSprint = Input.GetKey(KeyCode.LeftShift) && z > 0 && currentStamina > 0f;
         bool isWalk = currentSpeed > 0f && !isCrouch && !isSprint;
         if (isCrouch)
@@ -98,6 +114,7 @@ public class PlayerMove : MonoBehaviour
         else if (isSprint)
         {
             // 뛰기
+            currentSpeed = SprintSpeed;
             currentSpeed = SprintSpeed;
             anim.SetBool("Run", isMovement && isSprint);
             anim.SetBool("Walk", isMovement);
@@ -121,7 +138,8 @@ public class PlayerMove : MonoBehaviour
             anim.SetBool("Walk", isMovement);
             anim.SetBool("Run", false);
             anim.SetBool("CrouchWalk", false);
-            noise.SetState(CharacterMoveState.Walk);
+            if(anim.GetCurrentAnimatorStateInfo(0).IsName("Walk"))
+                noise.SetState(CharacterMoveState.Walk);
            // print("player Walk");
            var st = anim.GetCurrentAnimatorStateInfo(0);
            if (st.IsName("Idle"))
@@ -138,6 +156,7 @@ public class PlayerMove : MonoBehaviour
             currentStamina = Mathf.Clamp(currentStamina, 0f, maxStamina);
             isRecovering = false;
             recoveryTimer = 0f;
+            StaminaUI();
         }
         else 
         {
@@ -154,6 +173,7 @@ public class PlayerMove : MonoBehaviour
             {
                 currentStamina += staminaHeal * Time.deltaTime;
                 currentStamina = Mathf.Clamp(currentStamina, 0f, maxStamina);
+                StaminaUI();
             }
         }
         
@@ -168,5 +188,19 @@ public class PlayerMove : MonoBehaviour
 
         charctrl.Move(move * Time.deltaTime);
         
+    }
+
+    void StaminaUI() 
+    {
+        if (staminaText != null)
+        {
+            staminaText.text = $"스태미너 : {Mathf.RoundToInt(currentStamina)}";
+        }
+    }
+    public void HealStamina(int amount)
+    { //스태미너 회복물약을 사용하기 위한 함수
+        currentStamina += amount;
+        currentStamina = Mathf.Min(currentStamina, maxStamina);
+        StaminaUI();
     }
 }

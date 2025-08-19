@@ -20,12 +20,14 @@ public class MainScene : MonoBehaviour
 
     void OnPlayBtnClick()
     {
-        print("play");
+        //print("play");
+        SceneLoader.Instance.LoadSceneAdditive("Stage1", true);
     }
 
     void OnSettingBtnClick()
     {
-        print("setting");
+        //print("setting");
+        UIManager.Instance.ToggleSettings();
     }
 
     void OnQuitBtnClick()

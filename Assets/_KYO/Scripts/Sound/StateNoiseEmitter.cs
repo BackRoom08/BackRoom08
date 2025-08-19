@@ -2,8 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-using UnityEngine;
-
 public enum CharacterMoveState
 {
     Idle,   // 멈춤 
@@ -34,14 +32,17 @@ public class StateNoiseEmitter : MonoBehaviour
     [SerializeField, Tooltip("탈진(호흡) 세기 배수")] private float exhaustLoudMul = 1.8f;
     [SerializeField, Range(0,1f), Tooltip("호흡 반경 감쇄")] public float breathRangeMul = 0.75f;
     
-    [SerializeField, Tooltip("인식 활성화(확인용)")]bool  isActive = false;
+    bool  isActive = false;
     float currentLoudMul = 1f;
     float currentRangeMul = 1f;
     
     // 중복 방지
-    AudioClip currentClip;
-    [SerializeField, Tooltip("사운드 현재 상태")]CharacterMoveState currentState = CharacterMoveState.Idle;
+    [SerializeField] AudioClip currentClip;
+    [SerializeField] CharacterMoveState currentState = CharacterMoveState.Idle;
 
+    [SerializeField, Tooltip("사운드 인식 끄기(사운드 인식이 필요없다면 꼭 false로)")]
+    private bool loudEnabled = false;
+    
     void Awake()
     {
         if (!stepSource)   stepSource   = gameObject.AddComponent<AudioSource>();
@@ -54,8 +55,22 @@ public class StateNoiseEmitter : MonoBehaviour
         }
     }
     
+    
+    // SetState 추가 할시 아래 코드 3줄 추가해서 원하는값 대입 필요
+    // 1. Enum 값추가
+    // 2. AudioClip 변수 추가해서 원하는값 넣기
+    // 3. SetState 함수에 스위치문 추가
+    // 4. 아래값 추가 ( PlayLoop의 가운데값 클립만 바꾸면 됨)
+    // PlayLoop(stepSource, 추가한 AudioClip 클립, ref currentClip);
+    // isActive = true;
+    // currentLoudMul  = walkLoudMul;
+    // 해당하는 스크립트에서 SetState호출
+    // 호출할시 
+    // private StateNoiseEmitter noise; 변수 선언
+    // 만든 이넘값 넣어서 호출
+    // noise.SetState(CharacterMoveState.만든 이넘(Enum));
+    
     // 사운드 필요한곳에서 호출
-    // 현재 스위치 문에 없는건 자동으로 stop됨
     public void SetState(CharacterMoveState state)
     {
         if(state == currentState) return;
@@ -68,6 +83,9 @@ public class StateNoiseEmitter : MonoBehaviour
         
         switch (currentState)
         {
+            case CharacterMoveState.Idle:
+                //print("Idle");
+                break;
             case CharacterMoveState.Walk:
                 //print("Walk");
                 PlayLoop(stepSource, walkClip, ref currentClip);
@@ -92,6 +110,7 @@ public class StateNoiseEmitter : MonoBehaviour
                 currentRangeMul = breathRangeMul;
                 break;
             
+            // 여기 위에 추가 케이스 만들어서
             default:
                 break;
         }
@@ -100,8 +119,9 @@ public class StateNoiseEmitter : MonoBehaviour
     void Update()
     {
         // 사운드 인식 알림
-        if (isActive)
-            EmitNoise(currentLoudMul, currentRangeMul);
+        if (!loudEnabled || !isActive) return;
+        
+        EmitNoise(currentLoudMul, currentRangeMul);
     }
     
     void PlayLoop(AudioSource src, AudioClip clip, ref AudioClip current)
