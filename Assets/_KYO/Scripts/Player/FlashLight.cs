@@ -16,7 +16,31 @@ public class FlashLight : MonoBehaviour
     private Light flashlightLight; // Light 컴포넌트 참조
     private Vector3 initialLightLocalPos;
 
+    // 기절 관련 변수
+    public float flashRange = 15f; // 후레쉬 거리
+    public LayerMask enemyLayer;   // 적 레이어
 
+     void Awake()
+    {
+        GameObject player = GameObject.Find("Player");
+        if (player == null)
+        { 
+            return;
+        }
+
+        Transform lookTransform = player.transform.Find("Look");
+        if (lookTransform == null)
+        {
+            return;
+        }
+
+        Transform flashPoint = lookTransform.Find("FlashPoint");
+        if (flashPoint == null)
+        {       
+            return;
+        }
+        flashLightHolPoint = flashPoint;
+    }
     public void EquipFlashLight(GameObject flashlightPrefab)
     { //프리팹을 받아서 장착
         if (equippedFlashLight != null) return; //손전등이 있으면 리턴
@@ -45,6 +69,12 @@ public class FlashLight : MonoBehaviour
             SetFlashlight(isFlashLightOn); //키거나 끄기
         }
         ApplyLightBobEffect(); // 빛 흔들림 적용
+
+        if (isFlashLightOn) //손전등이 켜져있다면
+        {
+            CheckEnemyInLight(); // 적 감지
+        }
+
     }
 
     void LateUpdate()
@@ -79,6 +109,21 @@ public class FlashLight : MonoBehaviour
         if (light != null) 
         {// 있으면 값에따라 온오프
             light.enabled = state;
+        }
+    }
+    private void CheckEnemyInLight()
+    { //레이를 전방으로 쏨
+        Ray ray = new Ray(equippedFlashLight.transform.position, equippedFlashLight.transform.forward);
+        Debug.DrawRay(ray.origin, ray.direction * flashRange, Color.red);
+        if (Physics.Raycast(ray, out RaycastHit hit, flashRange, enemyLayer))
+        { //전방으로 쏜 레이 안에 몹을 탐색
+            EnemyEyeLightMob enemy = hit.collider.GetComponent<EnemyEyeLightMob>(); 
+            //  탐색된 몹이 eyelight스크립트를 가지고있을경우에 기절시킴         
+            if (enemy != null)
+            {
+                enemy.OnFlashHit(); // 적 기절 처리
+                Debug.Log("으악 내눈!");
+            }
         }
     }
 }

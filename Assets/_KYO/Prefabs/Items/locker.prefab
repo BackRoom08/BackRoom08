@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 2286840548196573343}
   - component: {fileID: 3913863852818500121}
   - component: {fileID: 8851755899373122890}
+  - component: {fileID: 5193635991025622621}
   m_Layer: 10
   m_Name: locker
   m_TagString: Untagged
@@ -143,6 +144,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   animator: {fileID: 3913863852818500121}
+--- !u!114 &5193635991025622621
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 243709991558611238}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7534dce43f6560c4f91d70a7156ed3f9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  data: {fileID: 11400000, guid: 25744a8994893ab4a8ba4732ebcdcd79, type: 2}
 --- !u!1 &3803801157584435645
 GameObject:
   m_ObjectHideFlags: 0
