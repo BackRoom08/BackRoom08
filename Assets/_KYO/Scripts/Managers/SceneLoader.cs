@@ -43,6 +43,7 @@ public class SceneLoader : MonoBehaviour
     public void LoadSceneAdditive(string sceneName, bool showLoading)
     {
         StartCoroutine(CoLoad(sceneName, showLoading));
+        MapManager.Instance.NewGame();
     }
 
     IEnumerator CoLoad(string sceneName, bool showLoading)
@@ -98,6 +99,58 @@ public class SceneLoader : MonoBehaviour
         //print("loaded");
 
         // (옵션) 로딩 종료 후 커서/타임스케일은 UIManager가 관리
+    }
+
+    // 씬 다시 로드 (리게임)
+    public void ReloadActiveScene(bool showLoading = true)
+    {
+        string activeSceneName = SceneManager.GetActiveScene().name;
+        StartCoroutine(CoReloadActiveScene(activeSceneName, showLoading));
+        MapManager.Instance.ReGame();
+        UIManager.Instance.CloseDeadUI();
+    }
+
+    IEnumerator CoReloadActiveScene(string sceneName, bool showLoading)
+    {
+        if (showLoading && UIManager.Instance)
+        {
+            UIManager.Instance.ShowLoading(true);
+            UIManager.Instance.SetLoadingProgress(0f);
+        }
+
+        // 1. 현재 활성 씬 언로드
+        yield return SceneManager.UnloadSceneAsync(sceneName);
+
+        // 2. 씬을 추가적으로 다시 로드
+        AsyncOperation op = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
+        op.allowSceneActivation = false;
+
+        float elapsed = 0f;
+        while (op.progress < 0.9f)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            UIManager.Instance.SetLoadingProgress(op.progress);
+            yield return null;
+        }
+
+        while (elapsed < minLoadingTime)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        op.allowSceneActivation = true;
+        while (!op.isDone) yield return null;
+
+        // 3. 다시 로드된 씬을 활성 씬으로 지정
+        var loaded = SceneManager.GetSceneByName(sceneName);
+        SceneManager.SetActiveScene(loaded);
+
+        if (showLoading && UIManager.Instance)
+        {
+            UIManager.Instance.SetLoadingProgress(1f);
+            UIManager.Instance.ShowLoading(false);
+        }
     }
     private void Update()
     {

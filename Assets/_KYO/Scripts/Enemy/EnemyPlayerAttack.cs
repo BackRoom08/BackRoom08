@@ -38,7 +38,7 @@ public class EnemyPlayerAttack : MonoBehaviour
             }
         }
     }
-    private void OnTriggerEnter(Collider other) //임시로 조건 넣어둠
+    private void OnTriggerEnter(Collider other) //임시 조건 지금은 그냥 부닥치면
     {
         if (other.CompareTag("Player"))
         {
@@ -80,7 +80,13 @@ public class EnemyPlayerAttack : MonoBehaviour
         playerObject.transform.position = MapManager.Instance.playerDeadRoomPoint.position;
 
         transform.LookAt(playerObject.transform);
-        playerObject.transform.LookAt(transform);
+        // 플레이어가 적을 수평으로만 바라보도록 수정
+        Vector3 directionToEnemy = transform.position - playerObject.transform.position;
+        directionToEnemy.y = 0; // Y축 값을 0으로 만들어 수평 방향으로 고정
+        if (directionToEnemy != Vector3.zero) // 0 벡터가 아닐 때만 회전 적용 (오류 방지)
+        {
+            playerObject.transform.rotation = Quaternion.LookRotation(directionToEnemy);
+        }
 
         MapManager.Instance.FadeIn(1.5f);
 

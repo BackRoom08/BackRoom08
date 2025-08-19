@@ -1,9 +1,10 @@
-﻿using System.Collections; 
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.SceneManagement;
 
 public class MapManager : MonoBehaviour
 {
@@ -15,9 +16,10 @@ public class MapManager : MonoBehaviour
     [Tooltip("적이플레이어를 죽일 위치")]
     public Transform enemyDeadRoomPoints;
 
-    [Tooltip("페이드 효과에 사용할 Global Volume")]
-    public Volume volume;
+    private Volume volume; //페이드인,아웃 효과용
     private Vignette vignette;
+
+    private bool isRestarted = false; //게임 리스타트 여부
 
 
     private void Awake()
@@ -25,8 +27,7 @@ public class MapManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            //DontDestroyOnLoad(this); 
-            
+            DontDestroyOnLoad(this);
         }
         else
         {
@@ -34,15 +35,64 @@ public class MapManager : MonoBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
     private void Start()
     {
-        // Volume 프로파일에서 Vignette 컴포넌트를 찾아서 미리 저장. (데스씬용)
-        if (volume != null && volume.profile.TryGet(out vignette)) {  }
+        FindAndAssignDeadRoomPoint();
+        FindGlobalVolume();
+    }
+
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        FindAndAssignDeadRoomPoint();
+        FindGlobalVolume();
+
+    }
+
+    void FindAndAssignDeadRoomPoint() //DeadRoom 찾아서 이동포인트 등록(데드씬용)
+    {
+        GameObject deadRoomObject = GameObject.Find("DeadRoom");
+        if (deadRoomObject != null)
+        {
+            playerDeadRoomPoint = deadRoomObject.transform.Find("PlayerPoint");
+            enemyDeadRoomPoints = deadRoomObject.transform.Find("EnemyPoint");
+            if (playerDeadRoomPoint == null || enemyDeadRoomPoints == null)
+            {
+                Debug.LogError("DeadRoom포인트 찾지못함");
+            }
+        }
         else
         {
-            Debug.LogWarning("MapManager: Volume 또는 Volume Profile에 Vignette가 없습니다.");
+            Debug.LogWarning("DeadRoom 을 씬에 추가해주세요");
         }
     }
+    void FindGlobalVolume() //GlobalVolume 찾아서 컴포넌트등록 (데드씬용)
+    {
+        GameObject globalvolumeObject = GameObject.Find("Global Volume");
+        if (globalvolumeObject != null)
+        {
+            volume = globalvolumeObject.GetComponent<Volume>();
+            if (volume != null && volume.profile.TryGet(out vignette)) { }
+            else
+            {
+                Debug.LogWarning("MapManager: Volume 또는 Volume Profile에 Vignette가 없습니다.");
+            }
+        }else
+        {
+            Debug.LogWarning("씬에 'Global Volume' 오브젝트가 없습니다.");
+        }
+
+    }
+
 
     /// <summary>
     /// 화면을 검게 만듭니다.
@@ -85,9 +135,19 @@ public class MapManager : MonoBehaviour
             yield return null;
         }
 
-        // 정확한 목표값으로 설정 완료
         vignette.intensity.Override(targetIntensity);
     }
 
+    public bool IsRegame()
+    {
+        return isRestarted;
+    }
+    public void ReGame()
+    {
+        isRestarted = true;
+    }
+    public void NewGame()
+    {
+        isRestarted = false;
+    }
 }
-
