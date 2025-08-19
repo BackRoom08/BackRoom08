@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class ItemPickUp : MonoBehaviour
 { //플레이어에게 붙임
@@ -8,16 +9,35 @@ public class ItemPickUp : MonoBehaviour
     public float pickUpRange = 3f;
     public PlayerInventory inventory;
 
-   void Awake()
+    void OnEnable()
     {
-        cam = Camera.main;
-
-        GameObject inventoryGO = GameObject.Find("Canvas/P_PlayerUI/P_InventoryController");
-        if (inventoryGO != null)
-        {
-            inventory = inventoryGO.GetComponent<PlayerInventory>();
-        }
+        SceneManager.sceneLoaded += OnSceneLoaded;
     }
+
+    void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // 씬이 로드된 후 오브젝트가 준비될 때까지 기다리는 코루틴 시작
+        StartCoroutine(InitializeAfterSceneLoad());
+    }
+
+    IEnumerator InitializeAfterSceneLoad()
+    {
+        // MainCamera가 준비될 때까지 대기
+        yield return new WaitUntil(() => GameObject.FindGameObjectWithTag("MainCamera") != null);
+        cam = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
+
+        // 인벤토리 오브젝트가 준비될 때까지 대기
+        yield return new WaitUntil(() => GameObject.Find("Canvas/P_PlayerUI/P_InventoryController") != null);
+        inventory = GameObject.Find("Canvas/P_PlayerUI/P_InventoryController").GetComponent<PlayerInventory>();
+    }
+
+
+
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.E))
@@ -50,17 +70,9 @@ public class ItemPickUp : MonoBehaviour
                             }
                         }
                         Destroy(item.gameObject); //주우면 아이템 파괴
-
-                    }
-                    else
-                    {
-
                     }
                 }
             }
         }
-
-
     }
-
 }

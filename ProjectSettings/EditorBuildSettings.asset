@@ -15,6 +15,9 @@ EditorBuildSettings:
     path: Assets/_KYO/Scenes/Stage1.unity
     guid: 93ab6f5923b8dab4db16209b3abff83d
   - enabled: 1
+    path: Assets/_KYO/Scenes/Stage2.unity
+    guid: 90405e52aed10154e9c57fc4211dd414
+  - enabled: 1
     path: Assets/_KYO/Scenes/Stage3.unity
     guid: d147e00bfced2a3468537c42e761a2e7
   m_configObjects:

@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class ItemUser : MonoBehaviour
 { //빈 게임오브젝트를 인벤토리로 이름 짓고 거기에 붙임
@@ -9,23 +10,37 @@ public class ItemUser : MonoBehaviour
     public PlayerInventory inventory;
     public PlayerMove playermove;
 
-    void Awake()
+    void OnEnable()
     {
-        GameObject playerGO = GameObject.Find("Player");
-        if (playerGO != null)
-        {
-            playerStatus = playerGO.GetComponent<PlayerStatus>();
-            playermove = playerGO.GetComponent<PlayerMove>();
-        }
-        //인스펙터에서 playermove와 playerstatus 자동연결
-
-            GameObject inventoryGO = GameObject.Find("Canvas/P_PlayerUI/P_InventoryController");
-        if (inventoryGO != null)
-        {
-            inventory = inventoryGO.GetComponent<PlayerInventory>();
-        }
-        //인스펙터에서 playerinventory 자동연결
+        SceneManager.sceneLoaded += OnSceneLoaded;
     }
+
+    void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        StartCoroutine(InitializeReferences());
+    }
+
+    IEnumerator InitializeReferences()
+    {
+        // Player 오브젝트가 준비될 때까지 대기
+        yield return new WaitUntil(() => GameObject.Find("Player") != null);
+        GameObject playerGO = GameObject.Find("Player");
+
+        playerStatus = playerGO.GetComponent<PlayerStatus>();
+        playermove = playerGO.GetComponent<PlayerMove>();
+
+        // 인벤토리 오브젝트가 준비될 때까지 대기
+        yield return new WaitUntil(() => GameObject.Find("Canvas/P_PlayerUI/P_InventoryController") != null);
+        GameObject inventoryGO = GameObject.Find("Canvas/P_PlayerUI/P_InventoryController");
+
+        inventory = inventoryGO.GetComponent<PlayerInventory>();
+    }
+
     void Update()
     {
         currentItem = inventory.GetSelectedItem();

@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -8,7 +8,7 @@ public class SceneLoader : MonoBehaviour
 
     [SerializeField] private string bootstrapSceneName = "SampleScene"; // 전역 시스템 담긴 씬(선택)
     [SerializeField] private float minLoadingTime = 2f; // 로딩화면 최소 노출
-    
+
     [SerializeField] private bool autoLoadOnStart = true;
     [SerializeField] private string firstSceneToLoad = "StartScene";
 
@@ -24,20 +24,21 @@ public class SceneLoader : MonoBehaviour
         if (autoLoadOnStart && !string.IsNullOrEmpty(firstSceneToLoad))
             StartCoroutine(AutoKickoff());
     }
-    
+
+
     IEnumerator AutoKickoff()
     {
         yield return null;
         //LoadSceneAdditive(firstSceneToLoad);
         LoadSceneAdditive(firstSceneToLoad, false);
     }
-    
+
     // 씬 전환 사용
     // 아래 그대로 호출 씬이름만 넣어서
     // SceneLoader.Instance.LoadSceneAdditive("본인 씬", true);
     // 예시
     // SceneLoader.Instance.LoadSceneAdditive("Stage1", true);
-    
+
     // 씬 전환 로더
     public void LoadSceneAdditive(string sceneName, bool showLoading)
     {
@@ -97,5 +98,28 @@ public class SceneLoader : MonoBehaviour
         //print("loaded");
 
         // (옵션) 로딩 종료 후 커서/타임스케일은 UIManager가 관리
+    }
+    private void Update()
+    {
+        // 테스트용 씬 이동 (Ctrl + F1, F2, ...)
+        if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
+        {
+            if (Input.GetKeyDown(KeyCode.F1))
+            {
+                LoadSceneAdditive("Stage1", true);
+            }
+            if (Input.GetKeyDown(KeyCode.F2))
+            {
+                LoadSceneAdditive("Stage2", true);
+            }
+            if (Input.GetKeyDown(KeyCode.F3))
+            {
+                LoadSceneAdditive("Stage3", true);
+            }
+            if (Input.GetKeyDown(KeyCode.F4))
+            {
+                LoadSceneAdditive("Stage4", true);
+            }
+        }
     }
 }
