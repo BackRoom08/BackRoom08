@@ -3421,7 +3421,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player: {fileID: 0}
   chaseRange: 50
-  walkSpeed: 4
+  walkSpeed: 2
   runSpeed: 4
   idleDuration: 2
   walkDuration: 10
