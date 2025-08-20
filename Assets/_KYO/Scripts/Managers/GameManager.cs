@@ -57,8 +57,8 @@ public class GameManager : MonoBehaviour
         noiseEmitter = player.GetComponent<StateNoiseEmitter>();
 
         InitializePlayerData();  
-        ApplyPlayerDataToPlayer();
         LoadPlayerDataFromFile();
+        ApplyPlayerDataToPlayer();
     }
 
     void InitializePlayerData() 
@@ -90,8 +90,7 @@ public class GameManager : MonoBehaviour
             // 카메라
             crouchHeight = playerMove.crouchHeight,
             standHeight = playerMove.standHeight,
-
-            //
+           
             inventoryItems = new List<ItemSaveData>()
         };
     }
@@ -129,27 +128,35 @@ public class GameManager : MonoBehaviour
         playerMove.standHeight = PlayerData.standHeight;
 
         // 인벤토리 복원
-        List<ItemDatas> loadedInventory = LoadInventory();
-        // 여기에 loadedInventory를 실제 인벤토리 시스템에 넘겨주는 코드 추가 필요
-
+        List<ItemDatas> loadedInventory = LoadInventory(); //저장된 인벤토리 데이터를 불러옴
+        PlayerInventory inventory = FindObjectOfType<PlayerInventory>();//현재 씬에서 찾은뒤 변수 저장
+        if (inventory != null)
+        { 
+            inventory.RestoreInventory(loadedInventory);
+        }
+        else
+        {
+            Debug.LogWarning("PlayerInventory를 찾을 수 없습니다.");
+        }
         Debug.Log("플레이어 데이터 적용 완료");
     }
 
     public void SaveInventory(List<ItemDatas> currentInventory)
-    {
-        PlayerData.inventoryItems.Clear(); //플레이어 데이터 기존인벤토리 정보 초기화
+    { 
+        PlayerData.inventoryItems.Clear(); //기존 저장된 인벤토리를 모두 지움
 
         foreach (ItemDatas item in currentInventory)
-        { //인벤토리에 있는 아이템을 하나씩 반복해서 처리
+        {//현재 있는 인벤토리 아이템들을 순차적으로 검사
+            if (item == null) continue; // null 아이템은 무시
+
             ItemSaveData saveData = new ItemSaveData
-            { //저장가능한 형태인 itemsavedata로 변환 스크립터블은 직접저장 불가
+            {
                 uid = item.uid,
                 itemName = item.itemName,
                 type = item.type
             };
-             PlayerData.inventoryItems.Add(saveData); //변환한 데이터를 인벤토리 리스트에 추가
+            PlayerData.inventoryItems.Add(saveData); //savedata를 인벤토리 리스트에 추가
         }
-        Debug.Log("인벤토리 저장 완료");
     }
     public List<ItemDatas> LoadInventory()
     {
@@ -163,34 +170,29 @@ public class GameManager : MonoBehaviour
             {// UID의 아이템이 존재하는지 확인
                 loadedInventory.Add(matchedItem);
             }
-            else
-            {//없..
-                Debug.LogWarning($"아이템 UID {savedItem.uid}에 해당하는 데이터가 없습니다.");
-            }
-        }
-        //있음.
+        }       
         Debug.Log("인벤토리 로드 완료!");
         return loadedInventory;
     }
 
+    public List<ItemDatas> GetSavedInventory()
+    {
+        return LoadInventory(); // 저장된 인벤토리 리스트 반환
+    }
+
+
     public void SavePlayerDataToFile()
     {
         string json = JsonUtility.ToJson(PlayerData, true); // true는 보기 좋게 들여쓰기
-        System.IO.File.WriteAllText(savePath, json);
-        Debug.Log("플레이어 데이터가 JSON 파일로 저장되었습니다: " + savePath);
+        System.IO.File.WriteAllText(savePath, json); //json으로 저장.기존 파일 없으면 새로 만들고 있으면 덮어씀
     }
 
     public void LoadPlayerDataFromFile()
-    {
+    { //외부파일에서 데이터 호출
         if (System.IO.File.Exists(savePath))
-        {
-            string json = System.IO.File.ReadAllText(savePath);
-            PlayerData = JsonUtility.FromJson<PlayerData>(json);
-            Debug.Log("플레이어 데이터가 JSON 파일에서 불러와졌습니다.");
-        }
-        else
-        {
-            Debug.LogWarning("저장된 JSON 파일이 없습니다.");
+        { //save경로에 파일이존재하는지 확인
+            string json = System.IO.File.ReadAllText(savePath);//파일 내용을 문자열로 읽어옴
+            PlayerData = JsonUtility.FromJson<PlayerData>(json);//읽어온 문자열을 playerdata 타입의 객체로 저장
         }
     }
 

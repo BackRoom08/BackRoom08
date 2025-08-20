@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 using static UnityEditor.Progress;
@@ -18,33 +19,36 @@ public class PlayerInventory : MonoBehaviour
     private int selectedIndex = -1; //현재 선택된 슬롯의 인덱스 변수. 초기값은 아무것도 없는 상태
 
 
-    void Awake()
+    void OnEnable()
     {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        StartCoroutine(InitializeInventory());
+    }
+
+    IEnumerator InitializeInventory()
+    {
+        yield return new WaitUntil(() => GameObject.Find("Player") != null);
         GameObject player = GameObject.Find("Player");
-        if (player != null)
-        {
-            Transform handPoint = player.transform.Find("root/pelvis/spine_01/spine_02/spine_03/clavicle_l/upperarm_l/lowerarm_l/hand_l/HandPoint");
-            if (handPoint != null)
-            {
-                HandTransform = handPoint;
-            }
-        }//플레이어 손위치 자동으로 인스펙터에서 연결
+        //플레이어가 생성될때까지 대기 후 변수 저장
+        Transform handPoint = player.transform.Find("root/pelvis/spine_01/spine_02/spine_03/clavicle_l/upperarm_l/lowerarm_l/hand_l/HandPoint");
+        if (handPoint != null)
+            HandTransform = handPoint; //손위치 찾기. 플레이어의 bone 구조를 검색함
 
-
-            // Canvas 아래의 InventoryArea를 전체 씬에서 찾기
-            GameObject inventoryAreaGO = GameObject.Find("InventoryArea");
-        if (inventoryAreaGO == null)
-        {
-            Debug.LogError("InventoryArea 오브젝트를 찾을 수 없습니다.");
-            return;
-        }
-
+        yield return new WaitUntil(() => GameObject.Find("InventoryArea") != null);
+        GameObject inventoryAreaGO = GameObject.Find("InventoryArea");
         Transform inventoryArea = inventoryAreaGO.transform;
-
-        // IconBackGround 안의 자식들 중에서 Icon1~Icon5를 찾기
-        int foundCount = 0;
+        //인벤토리 UI생성까지 대기 후 변수에 그 위치를 저장.
         foreach (Transform background in inventoryArea)
-        {
+        {//inventoryarea의 자식들을 순차적 검사
             foreach (Transform child in background)
             {
                 if (child.name.StartsWith("Icon"))
@@ -56,14 +60,24 @@ public class PlayerInventory : MonoBehaviour
                         if (iconImage != null)
                         {
                             itemSlot[index - 1] = iconImage;
-                            foundCount++;
-                        }//인벤토리 5칸의 이미지를 찾아서 인스펙터 자동 연결
-                    }
+                            //"Icon1"~"Icon5"처럼 이름에 숫자가 붙은 경우, 그 숫자를 추출해서 인덱스로 사용
+                            //해당 오브젝트에 Image 컴포넌트가 있으면 itemSlot 배열에 저장
+                        }
+                    }                 
                 }
             }
         }
+
+        yield return new WaitUntil(() => itemSlot.All(slot => slot != null)); //모든 슬롯이 초기화될때까지 대기
+
+        if (GameManager.Instance != null)
+        { //게임매니저가 존재하면 저장된 아이템을 가져와서 인벤토리를 복원함
+            List<ItemDatas> savedItems = GameManager.Instance.GetSavedInventory();
+            RestoreInventory(savedItems);
+        }
+
     }
-        void Start()
+    void Start()
     {
      DeselectAllSlot();
     }
@@ -174,4 +188,25 @@ public class PlayerInventory : MonoBehaviour
         }
         return null;
     }
+
+    public void RestoreInventory(List<ItemDatas> loadedItems)
+    {
+        for (int i = 0; i < items.Length; i++)
+        {//슬롯수만큼 반복
+            items[i] = null; //아이템 초기화
+            itemSlot[i].sprite = null; //이미지도 초기화
+            itemSlot[i].color = anotherSlot; //선택되지않은 상태로 보이도록 색변경
+        }
+
+        for (int i = 0; i < loadedItems.Count && i < items.Length; i++)
+        { //저장된 아이템수와 슬롯수 중 작은 쪽까지만 반복
+            items[i] = loadedItems[i]; //아이템 데이터를 해당 슬롯에 넣음
+            itemSlot[i].sprite = loadedItems[i].icon; //이미지도 넣어줌
+            itemSlot[i].color = anotherSlot;
+        }
+
+        DeselectAllSlot();
+        Debug.Log("인벤토리 복원 완료");
+    }
+
 }

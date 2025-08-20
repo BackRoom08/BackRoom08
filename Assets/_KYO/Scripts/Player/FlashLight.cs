@@ -1,11 +1,12 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class FlashLight : MonoBehaviour
 { //플레이어에게 붙임
     public Transform flashLightHolPoint; //손전등을 들 위치
-    private GameObject equippedFlashLight; //장착할 손전등을 저장하는 변수
+    public GameObject equippedFlashLight; //장착할 손전등을 저장하는 변수
     private bool isFlashLightOn = false; //손전등 on off 여부
 
     // 흔들림 관련 변수
@@ -20,46 +21,59 @@ public class FlashLight : MonoBehaviour
     public float flashRange = 15f; // 후레쉬 거리
     public LayerMask enemyLayer;   // 적 레이어
 
-     void Awake()
+    void OnEnable()
     {
-        GameObject player = GameObject.Find("Player");
-        if (player == null)
-        { 
-            return;
-        }
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
 
+    void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        StartCoroutine(InitializeFlashPoint());
+    }
+
+    IEnumerator InitializeFlashPoint()
+    {
+        // Player 오브젝트가 준비될 때까지 대기
+        yield return new WaitUntil(() => GameObject.Find("Player") != null);
+
+        GameObject player = GameObject.Find("Player");
         Transform lookTransform = player.transform.Find("Look");
         if (lookTransform == null)
-        {
-            return;
-        }
+            yield break;
 
         Transform flashPoint = lookTransform.Find("FlashPoint");
         if (flashPoint == null)
-        {       
-            return;
-        }
+            yield break;
+
         flashLightHolPoint = flashPoint;
     }
+
     public void EquipFlashLight(GameObject flashlightPrefab)
-    { //프리팹을 받아서 장착
-        if (equippedFlashLight != null) return; //손전등이 있으면 리턴
-
-        equippedFlashLight = Instantiate(flashlightPrefab, flashLightHolPoint); //손전등 생성
-        equippedFlashLight.transform.localPosition = Vector3.zero; //위치 초기화
-        equippedFlashLight.transform.localRotation = Quaternion.identity; //회전 초기화
-
-        flashlightLight = equippedFlashLight.GetComponentInChildren<Light>();
-        if (flashlightLight != null)
-        { //자식오브젝트에서 light를 찾음
-            initialLightLocalPos = flashlightLight.transform.localPosition; 
-            //light의 초기위치 저장
-            flashlightLight.enabled = false; //손전등 불을끔
+    {
+        if (equippedFlashLight != null)
+        { //이미 손전등이 있다면
+            Destroy(equippedFlashLight); // 기존 손전등 제거
         }
 
+        equippedFlashLight = Instantiate(flashlightPrefab, flashLightHolPoint);
+        equippedFlashLight.transform.localPosition = Vector3.zero;
+        equippedFlashLight.transform.localRotation = Quaternion.identity;
+        //생성 , 및 위치, 회전 저장
+        flashlightLight = equippedFlashLight.GetComponentInChildren<Light>(); //light 컴포넌트 찾아서 저장
+        if (flashlightLight != null)
+        {
+            initialLightLocalPos = flashlightLight.transform.localPosition; //흔들림효과를 위한 위치 저장
+            flashlightLight.enabled = false; //꺼진상태로 시작
+        }
 
-        SetFlashlight(false); //최초 장착 시 손전등 꺼진상태로 설정
+        SetFlashlight(false); //손전등을 꺼진상태로 설정
     }
+
 
     void Update()
     {

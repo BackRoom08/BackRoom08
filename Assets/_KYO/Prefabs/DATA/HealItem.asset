@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: db71bda4d37316e448e3d9f60adbff46, type: 3}
   m_Name: HealItem
   m_EditorClassIdentifier: 
-  uid: 0
+  uid: 1
   type: 0
   icon: {fileID: 21300000, guid: f24ffe951cc9dc740886f725bd5f12bb, type: 3}
   modelPrefab: {fileID: 3899529266989000456, guid: 387d310f92ba5704d893cc1e9a3070f4,
