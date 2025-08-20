@@ -75,6 +75,10 @@ public class PlayerInventory : MonoBehaviour
             List<ItemDatas> savedItems = GameManager.Instance.GetSavedInventory();
             RestoreInventory(savedItems);
         }
+        selectedIndex = GameManager.Instance.PlayerData.selectedInventoryIndex;
+        if (selectedIndex >= 0)
+            selectSlot(selectedIndex);
+
 
     }
     void Start()
@@ -152,13 +156,17 @@ public class PlayerInventory : MonoBehaviour
         }
     }
 
-    void DeselectAllSlot() 
-    {//선택되지않은 칸은 색을 되돌림
+    void DeselectAllSlot()
+    {
         foreach (var slot in itemSlot)
         {
-            slot.color = anotherSlot;
+            if (slot != null)
+            {
+                slot.color = anotherSlot;
+            }
         }
     }
+
 
     public void RemoveItem(ItemDatas item)
     {
@@ -207,6 +215,11 @@ public class PlayerInventory : MonoBehaviour
 
         DeselectAllSlot();
         Debug.Log("인벤토리 복원 완료");
+    }
+
+    public int GetSelectedIndex()
+    {
+        return selectedIndex;
     }
 
 }

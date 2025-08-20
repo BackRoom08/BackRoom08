@@ -167,8 +167,6 @@ public class PasswordUI : MonoBehaviour
             if (enteredPW == correctPW) //정답비교
             {
                 Debug.Log("통과");
-                GameManager.Instance.CompleteStage2();
-
                 // 비활성화된 오브젝트까지 포함해서 전체 Transform에서 찾기
                 Transform[] allTransforms = Resources.FindObjectsOfTypeAll<Transform>();
                 Transform found = allTransforms.FirstOrDefault(t => t.name == "NextMapTrigger");

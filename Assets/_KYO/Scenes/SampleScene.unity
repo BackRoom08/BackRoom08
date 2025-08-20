@@ -1540,7 +1540,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3bee530e58d50ff4482e751a287a29f6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerDeadRoomPoint: {fileID: 0}
+  playerDeadRoomPoint: {fileID: 420726731578161659, guid: fa0aaf970aaafbd4cb1496acb76497cb,
+    type: 3}
   enemyDeadRoomPoints: {fileID: 0}
 --- !u!1 &1473192316
 GameObject:
@@ -1610,7 +1611,13 @@ MonoBehaviour:
     flashlightID: 
     isFlashlightOn: 0
     inventoryItems: []
-  allItemDatas: []
+    selectedInventoryIndex: -1
+  allItemDatas:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
 --- !u!1 &1490539788
 GameObject:
   m_ObjectHideFlags: 0
