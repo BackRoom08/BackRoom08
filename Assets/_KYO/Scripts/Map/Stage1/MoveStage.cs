@@ -28,6 +28,7 @@ public class MoveStage : MonoBehaviour
 
         // 인벤토리 저장
         GameManager.Instance.SaveInventory(inventory.items.ToList()); //게임매니저 싱글톤을 통해 저장
+        GameManager.Instance.PlayerData.selectedInventoryIndex = inventory.GetSelectedIndex();
         GameManager.Instance.SavePlayerDataToFile();                //플레이어 데이터를 파일로 저장
 
         yield return new WaitForSeconds(1f); // 저장 1초 대기

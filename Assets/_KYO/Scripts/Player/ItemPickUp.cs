@@ -65,17 +65,21 @@ public class ItemPickUp : MonoBehaviour
                     ItemObject item = hit.collider.GetComponent<ItemObject>(); //뭔가 닿은게 itemobject잇는지 검사
                     if (item != null) //아이템 일경우
                     {
-                        inventory.AddItem(item.data); //인벤토리에 아이템 추가
-
-                        if (item.data.type == ItemType.Flash) //손전등일경우
+                        if (item.data.type == ItemType.Flash) //손전등 일경우
                         {
                             FlashLight flashLight = this.GetComponent<FlashLight>(); //flash 컴포넌트 가져옴
-                            if (flashLight != null)
+                            if (flashLight != null && flashLight.equippedFlashLight == null)
                             {
-                                flashLight.EquipFlashLight(item.data.modelPrefab); //손전등 컴포넌트가 있으면 장착
+                                flashLight.EquipFlashLight(item.data.modelPrefab); //손전등 장착
+                                inventory.AddItem(item.data); //인벤토리 아이템 추가
+                                Destroy(item.gameObject); //주우면 아이템 파괴
                             }
                         }
-                        Destroy(item.gameObject); //주우면 아이템 파괴
+                        else
+                        {
+                            inventory.AddItem(item.data);
+                            Destroy(item.gameObject); //주우면 아이템 파괴
+                        }
                     }
                 }
             }
