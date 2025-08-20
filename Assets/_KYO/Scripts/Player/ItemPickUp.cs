@@ -40,6 +40,12 @@ public class ItemPickUp : MonoBehaviour
 
     void Update()
     {
+        // 씬이 다시 로드될 때를 대비해 cam 참조가 비었으면 다시 찾아 할당합니다.
+        if (cam == null)
+        {
+            cam = Camera.main;
+        }
+
         if (Input.GetKeyDown(KeyCode.E))
         {
             Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0)); //ray를 앞으로 쏨

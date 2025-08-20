@@ -1,8 +1,9 @@
-using Unity.VisualScripting;
+﻿using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.Collections;
 
 public class UIManager : MonoBehaviour
 {
@@ -13,6 +14,8 @@ public class UIManager : MonoBehaviour
     
     [SerializeField] GameObject settingsPanel;  // 설정창
     [SerializeField] GameObject loadingPanel;   // 로딩창
+    [SerializeField] GameObject deadPanel;   // 죽음창
+    [SerializeField] Image deadBgImage; // 사망 UI 배경 (페이드 효과용)
     [SerializeField] Slider loadingBar;  // 로딩창의 로딩바
     
     [SerializeField] SettingUI settingUI;
@@ -118,5 +121,50 @@ public class UIManager : MonoBehaviour
     {
         settings?.Save();
         // 필요한 값들 매핑
+    }
+
+    /// <summary>
+    /// 사망 UI를 1초에 걸쳐 서서히 표시합니다.
+    /// </summary>
+    public void ShowDeathUI()
+    {
+        if (deadPanel == null || deadBgImage == null)
+        {
+            Debug.LogError("Dead Panel 또는 Dead BG Image가 UIManager에 할당되지 않았습니다.");
+            return;
+        }
+        PauseGame();
+        StartCoroutine(FadeInDeadUI(1f));
+    }
+    public void CloseDeadUI()
+    {
+        if (deadPanel == null || deadBgImage == null)
+        {
+            Debug.LogError("Dead Panel 또는 Dead BG Image가 UIManager에 할당되지 않았습니다.");
+            return;
+        }
+        ResumeGame();
+        deadPanel.SetActive(false);
+    }
+
+    private IEnumerator FadeInDeadUI(float duration)
+    {
+        deadPanel.SetActive(true); 
+
+        Color color = deadBgImage.color;
+        color.a = 0f;
+        deadBgImage.color = color;
+
+        float elapsedTime = 0f;
+        while (elapsedTime < duration)
+        {
+            elapsedTime += Time.unscaledDeltaTime;
+            color.a = Mathf.Clamp01(elapsedTime / duration);
+            deadBgImage.color = color;
+            yield return null;
+        }
+
+        color.a = 1f;
+        deadBgImage.color = color;
     }
 }
