@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 public class FlashLight : MonoBehaviour
 { //플레이어에게 붙임
     public Transform flashLightHolPoint; //손전등을 들 위치
-    private GameObject equippedFlashLight; //장착할 손전등을 저장하는 변수
+    public GameObject equippedFlashLight; //장착할 손전등을 저장하는 변수
     private bool isFlashLightOn = false; //손전등 on off 여부
 
     // 흔들림 관련 변수
