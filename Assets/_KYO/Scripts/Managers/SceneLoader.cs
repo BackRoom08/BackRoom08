@@ -24,6 +24,7 @@ public class SceneLoader : MonoBehaviour
         if (autoLoadOnStart && !string.IsNullOrEmpty(firstSceneToLoad))
             StartCoroutine(AutoKickoff());
     }
+
     
     IEnumerator AutoKickoff()
     {
@@ -97,5 +98,28 @@ public class SceneLoader : MonoBehaviour
         //print("loaded");
 
         // (옵션) 로딩 종료 후 커서/타임스케일은 UIManager가 관리
+    }
+    private void Update()
+    {
+        // 테스트용 씬 이동 (Ctrl + F1, F2, ...)
+        if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
+        {
+            if (Input.GetKeyDown(KeyCode.F1))
+            {
+                LoadSceneAdditive("Stage1", true);
+            }
+            if (Input.GetKeyDown(KeyCode.F2))
+            {
+                LoadSceneAdditive("Stage2", true);
+            }
+            if (Input.GetKeyDown(KeyCode.F3))
+            {
+                LoadSceneAdditive("Stage3", true);
+            }
+            if (Input.GetKeyDown(KeyCode.F4))
+            {
+                LoadSceneAdditive("Stage4", true);
+            }
+        }
     }
 }
