@@ -47,7 +47,7 @@ public class PlayerMove : MonoBehaviour
         anim = GetComponent<Animator>();
         charctrl = GetComponent<UnityEngine.CharacterController>();
         noise = GetComponent<StateNoiseEmitter>();
-        GameObject staminaObj = GameObject.Find("StaminaViewUI");
+        GameObject staminaObj = GameObject.Find("StaminaNum");
         if (staminaObj != null)
         {
             staminaText = staminaObj.GetComponent<Text>();
@@ -194,7 +194,8 @@ public class PlayerMove : MonoBehaviour
     {
         if (staminaText != null)
         {
-            staminaText.text = $"스태미너 : {Mathf.RoundToInt(currentStamina)}";
+            // staminaText.text = $"스태미너 : {Mathf.RoundToInt(currentStamina)}";
+            staminaText.text = $"{Mathf.RoundToInt(currentStamina)}";
         }
     }
     public void HealStamina(int amount)

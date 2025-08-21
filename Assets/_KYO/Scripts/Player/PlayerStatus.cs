@@ -15,7 +15,9 @@ public class PlayerStatus : MonoBehaviour
     public Animator anim;
     public Text MentalText;
     private bool isMentalDamageActive = false; // 정신력 감소 활성화 여부
-    private Transform playerDeadRoomPoint; //죽는 장소
+    public Transform playerDeadRoomPoint; //죽는 장소
+
+    MapManager mapManager;
 
     void Awake()
     {
@@ -27,7 +29,11 @@ public class PlayerStatus : MonoBehaviour
         MentalText = textObj.GetComponent<Text>();
 
         // 데드룸 위치 설정
-        playerDeadRoomPoint = MapManager.Instance.playerDeadRoomPoint;
+        mapManager = FindObjectOfType<MapManager>(); // 추가
+        if (mapManager != null)
+        {
+            playerDeadRoomPoint = mapManager.playerDeadRoomPoint;
+        }
 
     }
 
@@ -83,7 +89,7 @@ public class PlayerStatus : MonoBehaviour
         isDead = true;
 
         // 페이드 아웃
-        MapManager.Instance.FadeOut(0.5f);
+        mapManager.FadeOut(0.5f);
         yield return new WaitForSeconds(0.5f);
 
         // 플레이어 조작 비활성화
@@ -94,10 +100,10 @@ public class PlayerStatus : MonoBehaviour
         if (cameraScript != null) cameraScript.enabled = false;
 
         // 데드룸 위치로 이동
-        transform.position = MapManager.Instance.playerDeadRoomPoint.position;
+        transform.position = playerDeadRoomPoint.position;
 
         // 페이드 인
-        MapManager.Instance.FadeIn(1.5f);
+        mapManager.FadeIn(1.5f);
 
         // 사망 UI 표시
         UIManager.Instance.ShowDeathUI();

@@ -66,6 +66,34 @@ MonoBehaviour:
     m_Localized: Settings
     m_Metadata:
       m_Items: []
+  - m_Id: 2594231641333760
+    m_Localized: Press 'E' to get the flashlight
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2595331719192576
+    m_Localized: You can turn the flashlight on and off by pressing the 'F' key
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2595528822120448
+    m_Localized: You can move without making a sound by holding down the 'Ctrl' key
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2595736716992512
+    m_Localized: Interaction is possible with the 'E' key
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2595908289191936
+    m_Localized: Jump to 'Space'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2596156478742528
+    m_Localized: Press the button
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2600202560233472
+    m_Localized: 'Stamina : '
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

@@ -65,6 +65,34 @@ MonoBehaviour:
 '
     m_Metadata:
       m_Items: []
+  - m_Id: 2594231641333760
+    m_Key: Stage1_text1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2595331719192576
+    m_Key: Stage1_text9
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2595528822120448
+    m_Key: Stage1_text2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2595736716992512
+    m_Key: Stage1_text3
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2595908289191936
+    m_Key: Stage1_text6
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2596156478742528
+    m_Key: Stage1_text8
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2600202560233472
+    m_Key: Player_stamina
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:
