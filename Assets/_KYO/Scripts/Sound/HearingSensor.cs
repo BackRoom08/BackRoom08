@@ -2,11 +2,21 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum HearingListenerType
+{
+    Player,
+    Monster,
+    AIMonster
+}
+
 public class HearingSensor : MonoBehaviour
 {
+    [SerializeField,Tooltip("누구인지 선택 꼭 하도록")] public HearingListenerType listenerType = HearingListenerType.AIMonster;
+    
     [Tooltip("이 값 이상이면 인식 성공. 값이 낮을수록 작은 소리도 듣지만 오탐지↑")] 
     public float hearThreshold = 0.2f;
     [Tooltip("소리를 가릴 레이어")] public LayerMask occlusionMask;
+    
 
     void OnEnable()  => NoiseSystem.OnNoise += OnNoiseHeard;
     void OnDisable() => NoiseSystem.OnNoise -= OnNoiseHeard;
@@ -30,6 +40,18 @@ public class HearingSensor : MonoBehaviour
         // 사운드 감지
         if (perceived >= hearThreshold)
         {
+            switch (listenerType)
+            {
+                case HearingListenerType.Player:
+                    break;
+
+                case HearingListenerType.Monster:
+                    break;
+
+                case HearingListenerType.AIMonster:
+                    GetComponent<IAIMonsterHearing>()?.OnHearNoise(e.Position, perceived, e);
+                    break;
+            }
             // GetComponent<YourAIController>()?.OnHearNoise(e.Position, perceived);
             //print($"[{name}] heard noise at {e.Position} (power {perceived:F2})");
         }
