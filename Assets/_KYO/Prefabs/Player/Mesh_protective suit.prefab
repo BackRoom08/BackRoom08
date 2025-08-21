@@ -2336,7 +2336,8 @@ GameObject:
   - component: {fileID: 8001131566506290578}
   - component: {fileID: 137541634294536949}
   - component: {fileID: 5068871651962221483}
-  m_Layer: 0
+  - component: {fileID: 1403299413586385614}
+  m_Layer: 8
   m_Name: Mesh_protective suit
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -2423,6 +2424,9 @@ MonoBehaviour:
   cam: {fileID: 0}
   pickUpRange: 5
   inventory: {fileID: 0}
+  interactableLayer:
+    serializedVersion: 2
+    m_Bits: 0
 --- !u!143 &4192459514199825514
 CharacterController:
   m_ObjectHideFlags: 0
@@ -2462,12 +2466,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   flashLightHolPoint: {fileID: 0}
+  equippedFlashLight: {fileID: 0}
   bobAmount: 0.02
   bobSpeed: 6
   flashRange: 10
   enemyLayer:
     serializedVersion: 2
     m_Bits: 128
+  flashSound: {fileID: 8300000, guid: 7334b9e8a8ef4504d8c14b8c3a66483d, type: 3}
 --- !u!114 &8001131566506290578
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2484,7 +2490,9 @@ MonoBehaviour:
   MentalInterval: 2
   MentalDamage: 1
   anim: {fileID: 4014799413246580197}
+  audioSource: {fileID: 5068871651962221483}
   MentalText: {fileID: 0}
+  playerDeadRoomPoint: {fileID: 0}
 --- !u!114 &137541634294536949
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2609,6 +2617,24 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &1403299413586385614
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8331182571979421920}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4cbaf9a401734b4eb7867e6c225bee2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  godModeRadius: 5
+  pushForce: 10
+  enemyLayer:
+    serializedVersion: 2
+    m_Bits: 128
+  enemyTag: Enemy
 --- !u!1 &8402122624725235503
 GameObject:
   m_ObjectHideFlags: 0

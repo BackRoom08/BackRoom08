@@ -21,6 +21,10 @@ public class FlashLight : MonoBehaviour
     public float flashRange = 15f; // 후레쉬 거리
     public LayerMask enemyLayer;   // 적 레이어
 
+    //후레쉬 소리
+    public AudioClip flashSound;
+    private AudioSource audioSource;
+
     void OnEnable()
     {
         SceneManager.sceneLoaded += OnSceneLoaded;
@@ -91,10 +95,15 @@ public class FlashLight : MonoBehaviour
 
     }
 
-    void LateUpdate()
-    {  
-        
+    void Start()
+    {
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
     }
+
     private void ApplyLightBobEffect()
     { //빛의 흔들림 효과를 적용하는 함수
         if (flashlightLight == null) return;
@@ -123,6 +132,19 @@ public class FlashLight : MonoBehaviour
         if (light != null) 
         {// 있으면 값에따라 온오프
             light.enabled = state;
+            // 🔊 소리 재생
+            if (audioSource != null)
+            {
+                if (state && flashSound != null)
+                {
+                    audioSource.PlayOneShot(flashSound);
+                }
+                else if (!state && flashSound != null)
+                {
+                    audioSource.PlayOneShot(flashSound);
+                }
+            }
+
         }
     }
     private void CheckEnemyInLight()

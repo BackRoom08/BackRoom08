@@ -44063,6 +44063,11 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 8
       objectReference: {fileID: 0}
+    - target: {fileID: 7215276333128793004, guid: 85c041bc13890ee4d98e10754932b753,
+        type: 3}
+      propertyPath: godModeRadius
+      value: 5
+      objectReference: {fileID: 0}
     - target: {fileID: 7402440240768187267, guid: 85c041bc13890ee4d98e10754932b753,
         type: 3}
       propertyPath: m_Layer

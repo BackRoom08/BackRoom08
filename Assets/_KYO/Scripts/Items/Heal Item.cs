@@ -6,12 +6,18 @@ using UnityEngine;
 public class HealItem : ItemDatas
 { // 스크립터블. item data 형식에 참조되어있음
     public int HealMentalHP = 50;
+    public AudioClip drinkSound;
     private bool isDrink = false;
     public void Use(PlayerStatus playerstatus)
     {
         if (playerstatus != null)
         {
             playerstatus.HealMentalHP(HealMentalHP);         
+        }
+        AudioSource audioSource = playerstatus.GetComponent<AudioSource>();
+        if (audioSource != null && drinkSound != null)
+        {
+            audioSource.PlayOneShot(drinkSound);
         }
     }
 
