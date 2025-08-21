@@ -1,525 +1,414 @@
+// TestPlayerMove.cs — RunObj 앵커까지 무조건 달리기 (도착 전 중단 X) + enum 기반 추격 감지
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
 [RequireComponent(typeof(NavMeshAgent))]
 public class TestPlayerMove : MonoBehaviour
 {
-    // ─────────────────────────────────────────────────────────────────────
-    // 상태 정의
-    public enum MoveState { Idle, Walk, Run, Crouch, Exhaustion, Scan, Flee }
+    public enum MoveState { Idle, Walk, Run, Scan, Flee }
 
-    // ─────────────────────────────────────────────────────────────────────
-    [Header("Refs (레퍼런스)")]
-    public Animator anim;                  // 플레이어 애니메이터(없으면 애니 파트 스킵)
-    public StateNoiseEmitter noise;        // 발자국/숨소리 등 노이즈 발생기
-    public Transform cam;                  // 카메라(앉기 높이 조절용)
+    [Header("Refs")]
+    public Animator anim;
+    public StateNoiseEmitter noise;
+    public Transform playerEye;
+    public Transform monster;
 
-    // ─────────────────────────────────────────────────────────────────────
-    [Header("Move Speeds (이동 속도)")]
-    public float walkSpeed = 2.4f;         // 걷기 속도
-    public float runSpeed = 5.2f;          // 뛰기(도망) 속도
-    public float crouchSpeed = 1.6f;       // 앉은 이동 속도
-    public float exhaustionSpeed = 1.8f;   // 탈진 상태 속도
-    public float rotationSpeed = 540f;     // 초당 회전 각속도(도/초)
+    [Header("Monster Status (Enum)")]
+    [Tooltip("IMonsterStatus 구현 컴포넌트(예: MonsterStatusRelay)를 Drag&Drop")]
+    public MonoBehaviour monsterStatusSource; // IMonsterStatus를 구현해야 함
+    IMonsterStatus _monsterStatus;            // 캐시
 
-    // ─────────────────────────────────────────────────────────────────────
-    [Header("Stamina (지구력)")]
-    public float maxStamina = 100f;        // 최대 지구력
-    public float runDrainPerSec = 2f;     // 달리기 중 초당 소모량
-    public float regenPerSecWalk = 12f;    // 걷기 중 초당 회복량
-    public float regenPerSecIdle = 18f;    // 정지/스캔 중 초당 회복량
-    public float regenPerSecCrouch = 20f;  // 앉기 중 초당 회복량
-    public float staminaHealDelay = 2.0f;  // 달리기 멈춘 후 회복 시작까지 지연
-    public float staminaToReEnableRun = 25f; // (옵션) 탈진 복귀 임계값
+    [Header("Speeds")]
+    public float walkSpeed = 2f;
+    public float runSpeed  = 5f;
+    public float turnSpeed = 540f;
 
-    // ─────────────────────────────────────────────────────────────────────
-    [Header("Crouch Camera (앉기 카메라 높이)")]
-    public float standHeight = 1.7f;       // 서있을 때 카메라 높이
-    public float crouchHeight = 1.0f;      // 앉을 때 카메라 높이
+    [Header("Flee Triggers")]
+    public float nearFleeRadius = 10f;          // 거리 10m 이내면 도망
+    public float seeFleeViewDist = 20f;         // 플레이어 시야 20m
+    [Range(0,180f)] public float playerFOVHalfAngle = 70f;
+    public LayerMask playerObstacleMask;
 
-    // ─────────────────────────────────────────────────────────────────────
-    [Header("Generator Work (발전기 작업)")]
-    public float interactRadius = 1.8f;    // 작업 시작/유지 반경
-    public float searchInterval = 0.5f;    // 발전기 재탐색 주기(초)
-    public float roamRadius = 8f;          // 발전기 없을 때 배회 반경
-    public float arriveTolerance = 0.6f;   // 목적지 도착 판정 여유
-    public bool preferCrouchWhileRoam = false; // 배회 중 기본적으로 앉을지 여부
+    [Header("Generator Work")]
+    public float interactRadius = 1.8f;
+    public float searchInterval = 0.5f;
+    public float roamRadius = 8f;
+    public float arriveTolerance = 0.6f;
 
-    // ─────────────────────────────────────────────────────────────────────
-    [Header("Monster Perception (몬스터의 시야 판정)")]
-    public Transform monster;              // 몬스터 본체
-    public Transform monsterEye;           // 몬스터 시야 기준(없으면 monster)
-    public LayerMask obstacleMask;         // 몬스터 LOS(시선) 가리는 레이어(벽/기둥 등)
-    public float monsterViewDistance = 22f;// 몬스터가 볼 수 있는 최대 거리
-    [Range(0,180f)]
-    public float fovHalfAngle = 40f;       // 몬스터 전방 시야 반각(요구: 40°)
-    public float proximityAlertRadius = 10f; // 시야 무관 근접 경보 반경(요구: 10m)
+    [Header("Work Look (2초마다 90°)")]
+    public bool  workLookWhileWorking = true;
+    public float workLookInterval = 2.0f;
+    public float workLookAngularSpeed = 360f;
+    public float workSnapAngle = 90f;
 
-    // ─────────────────────────────────────────────────────────────────────
-    [Header("Player View Check (플레이어 시야 판정)")]
-    public Transform playerEye;            // 플레이어 시야 기준(카메라/머리)
-    public float playerViewDistance = 30f; // 플레이어가 몬스터를 감지할 최대 거리
-    [Range(0,180f)]
-    public float playerFOVHalfAngle = 70f; // 플레이어 전방 시야 반각
-    public LayerMask playerObstacleMask;   // 플레이어 LOS 가리는 레이어
+    [Header("Flee Silence")]
+    public float fleeSilenceDelay = 3.0f;       // Flee 시작 3초 뒤 소리 끔
 
-    // ─────────────────────────────────────────────────────────────────────
-    [Header("Scan & Flee (스캔/도망 동작)")]
-    public float scanDuration = 1.4f;      // 스캔 상태에서 회전 유지 시간
-    public float scanAngularSpeed = 180f;  // 스캔 상태 회전 속도
-    public float fleeDistance = 10f;       // 커버 포인트 기본 반경
-    public float fleeResampleWhenClose = 0.8f; // 커버점 근접 시 재샘플 임계
+    [Header("Run Anchors (RunObj)")]
+    [Tooltip("런 앵커들을 담은 부모(자식 스피어들을 자동 수집)")]
+    public Transform runObj;
+    public float anchorArriveTol = 0.9f;
 
-    // ─────────────────────────────────────────────────────────────────────
-    [Header("Safe Return (안전 복귀 조건)")]
-    public float safeSightlessTime = 2.0f; // 시야 차단 유지 시간(초)
-    public float minSafeDistance = 12f;    // 안전 거리(이상일 때 복귀 가능)
+    [Header("Anti-Trap")]
+    public float minWallClearance = 0.7f;
+    public float pushOffWallDistance = 1.2f;
+    public float stuckSpeedEps = 0.05f;
+    public float stuckCheckTime = 1.0f;
 
-    // ─────────────────────────────────────────────────────────────────────
-    [Header("Threat Debounce (오탐 방지 디바운스)")]
-    public float threatAcquireTime = 0.35f;// 위협 감지 지속 시간(이상) → Flee 진입
-    public float threatReleaseTime = 0.50f;// 위협 사라짐 지속 시간(이상) → Flee 해제
-    float _threatOnTimer = 0f;             // 위협 on 누적 타이머
-    float _threatOffTimer = 0f;            // 위협 off 누적 타이머
-    bool _threatLatched = false;           // 디바운스 결과(최종 위협 스위치)
+    // ── 런타임 ──
+    public MoveState State { get; private set; } = MoveState.Scan;
 
-    // ─────────────────────────────────────────────────────────────────────
-    [Header("Fast Return From Flee (빠른 복귀)")]
-    public float quickLostSightGrace = 0.60f; // 안 보인 지 grace 이상이면 복귀 허용
-    public float farSafeDistanceMul = 1.25f;  // 안전거리 배수(멀리 떨어지면 즉시 복귀)
-
-    // ─────────────────────────────────────────────────────────────────────
-    [Header("Crouch After Corners (코너 n회 후 앉기 전환)")]
-    public int cornersToCrouch = 2;        // 코너를 최소 몇 번 꺾으면 앉기 전환할지(요구: 2)
-    public float cornerAngleDeg = 50f;     // 코너 판정 회전각 최소값(도)
-    public float cornerMinDist = 1.5f;     // 코너 사이 최소 이동 거리
-    int _losCornerCount = 0;               // 현재 누적된 코너 수
-    Vector3 _lastCornerPos;                // 마지막 코너로 인정한 위치
-    Vector3 _lastMoveDir;                  // 마지막 프레임 이동 방향
-
-    // ─────────────────────────────────────────────────────────────────────
-    [Header("Stuck Breaker (스턱 해제)")]
-    public float stuckSpeedEps = 0.05f;    // 거의 정지로 간주할 속도
-    public float stuckCheckTime = 0.8f;    // 이 시간 이상 정지/막힘이면 조치
-    float _stuckTimer = 0f;                // 스턱 누적 타이머
-
-    // ─────────────────────────────────────────────────────────────────────
-    // 런타임 공개 속성
-    public MoveState CurrentState { get; private set; } = MoveState.Idle;
-    public float Stamina => _stamina;
-    public Generator CurrentTarget => _targetGen;
-
-    // 내부 상태
     NavMeshAgent _agent;
     Generator _targetGen;
-    Vector3 _spawn;                        // 스폰 지점(배회 중심)
-    Vector3 _roamTarget;                   // 현재 배회 목적지
+    Vector3 _spawn, _roamTarget;
+    float _searchTimer;
 
-    float _searchTimer;                    // 발전기 재탐색 타이머
-    float _stamina;                        // 현재 지구력
-    float _healTimer;                      // 회복 지연 타이머
-    bool  _isRecovering;                   // 회복 시작 여부
-    bool  _isWorking;                      // 발전기 작업 중 플래그
-    bool  _isCrouch;                       // 앉기 상태
+    float _workLookTimer, _workTargetYaw;
 
-    // 스캔/도망 보조
-    float _scanTimer; int _scanDir = 1;    // 스캔 회전 타이머/방향
-    Vector3 _fleeTarget;                   // 현재 커버 목적지
-    float _lostSightTimer = 0f;            // Flee 중 '안 보임' 누적 시간
+    List<Transform> _anchors = new List<Transform>();
+    Transform _currentAnchor = null;
+    int _lastAnchorIndex = -1;
 
-    // ─────────────────────────────────────────────────────────────────────
+    float _fleeEnterTime;
+    bool  _muteNoise;
+
+    float _stuckTimer = 0f;
+
     void Awake()
     {
         _agent = GetComponent<NavMeshAgent>();
         if (!noise) noise = GetComponent<StateNoiseEmitter>();
-
-        // NavMesh 에이전트 권장 설정
-        _agent.updatePosition = true;
-        _agent.updateRotation = false; // 직접 회전(코너 긁힘 감소)
+        _agent.updateRotation = false;
         _agent.autoRepath = true;
-        _agent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
-        _agent.avoidancePriority = 50;
         _agent.stoppingDistance = Mathf.Max(0.1f, interactRadius * 0.6f);
+
+        // IMonsterStatus 캐시
+        _monsterStatus = monsterStatusSource as IMonsterStatus;
+        if (_monsterStatus == null && monsterStatusSource != null)
+            Debug.LogWarning($"{name}: monsterStatusSource는 IMonsterStatus를 구현해야 합니다.");
     }
 
     void Start()
     {
         _spawn = transform.position;
-        _stamina = maxStamina;
-
-        if (cam) cam.localPosition = new Vector3(cam.localPosition.x, standHeight, cam.localPosition.z);
         PickNewRoamPoint();
+        _workLookTimer = workLookInterval;
+        _workTargetYaw = transform.eulerAngles.y;
+        GatherRunAnchors();
+    }
 
-        // 시작은 스캔
-        SetState(MoveState.Scan);
-        _scanTimer = scanDuration;
-        _scanDir = (Random.value < 0.5f) ? -1 : 1;
-
-        // 코너 추적 초기화
-        _lastCornerPos = transform.position;
-        _lastMoveDir   = Vector3.zero;
+    void GatherRunAnchors()
+    {
+        _anchors.Clear();
+        if (!runObj) return;
+        for (int i = 0; i < runObj.childCount; i++)
+        {
+            var t = runObj.GetChild(i);
+            if (t && t.gameObject.activeInHierarchy) _anchors.Add(t);
+        }
     }
 
     void Update()
     {
         float dt = Time.deltaTime;
 
-        // ── 원시 위협 신호 계산 ──
-        bool closeThreat = IsMonsterVeryClose();   // ≤ 10m 근접 경보
-        bool seenByFOV   = IsMonsterSeeingMe();    // 몬스터 시야(40°+LOS)
-        bool rawThreat   = closeThreat || seenByFOV;
-
-        // ── 디바운스 처리(오탐 방지) ──
-        if (rawThreat) { _threatOnTimer += dt; _threatOffTimer = 0f;
-            if (!_threatLatched && _threatOnTimer >= threatAcquireTime) _threatLatched = true;
-        } else { _threatOnTimer = 0f; _threatOffTimer += dt;
-            if (_threatLatched && _threatOffTimer >= threatReleaseTime) _threatLatched = false;
-        }
-        bool threat = _threatLatched;
-
-        // ── 상태 전이(Flee 진입/해제) ──
-        if (threat && CurrentState != MoveState.Flee)
+        // ── Flee 트리거 (enum 기반) ──
+        bool chasing = IsMonsterChasing(); // ★ 이넘으로 판정
+        bool mustFlee = chasing;
+        if (!mustFlee && monster)
         {
-            _fleeTarget = FindCoverPoint();
-            SetDestinationOnNavMesh(_fleeTarget);
-            _lostSightTimer = 0f;
-            _losCornerCount = 0;                // 새 도망 시작 → 코너 카운터 리셋
-            _lastCornerPos  = transform.position;
-            _lastMoveDir    = Vector3.zero;
-            SetState(MoveState.Flee);
+            float dist = Vector3.Distance(transform.position, monster.position);
+            if (dist <= nearFleeRadius) mustFlee = true;
+            else if (PlayerSeesMonster()) mustFlee = true;
         }
-        else if (!threat && CurrentState == MoveState.Flee)
-        {
-            _lostSightTimer += dt;
 
-            // 멀리 떨어졌거나, 일정 시간 이상 안 보였으면 빠르게 복귀
-            if (DistanceToMonster() >= minSafeDistance * farSafeDistanceMul ||
-                _lostSightTimer >= quickLostSightGrace)
+        if (State != MoveState.Flee && mustFlee)
+        {
+            _fleeEnterTime = Time.time;
+            _muteNoise = false;
+            _stuckTimer = 0f;
+
+            if (TryPushOffWall(out var push)) SetDestinationOnNavMesh(push);
+
+            // ★ RunObj 앵커 중 하나 선택
+            _currentAnchor = PickAnchor(chasing, excludeIndex: _lastAnchorIndex);
+            if (_currentAnchor == null)
             {
-                _losCornerCount = 0;
-                _lastCornerPos  = transform.position;
-                _lastMoveDir    = Vector3.zero;
-                SetState(MoveState.Scan);
+                Vector3 fallback = ComputeSimpleFleePoint();
+                SetDestinationOnNavMesh(fallback);
             }
+            else
+            {
+                _lastAnchorIndex = (_anchors != null) ? _anchors.IndexOf(_currentAnchor) : -1;
+                SetDestinationOnNavMesh(_currentAnchor.position);
+            }
+
+            State = MoveState.Flee;
         }
 
-        // 메인 업데이트
-        BrainUpdate(dt, seenByFOV);
-        StateAndStaminaUpdate(dt, seenByFOV);
+        // Flee 중에는 앵커 도착 전 중단하지 않음
+        if (State == MoveState.Flee) FleeTick(dt);
+        else                         BrainWork(dt);
+
         MoveUpdate(dt);
         WorkUpdate();
+        WorkLookTick(dt);
         UpdateAnimator();
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // 목표/작업 판단
-    void BrainUpdate(float dt, bool seenByFOV)
+    bool IsMonsterChasing()
     {
-        if (CurrentState == MoveState.Flee)
-        {
-            // 보이면(몬스터가 봄) 커버 재샘플
-            if (seenByFOV && Arrived(_fleeTarget, fleeResampleWhenClose))
-            {
-                _fleeTarget = FindCoverPoint();
-                SetDestinationOnNavMesh(_fleeTarget);
-            }
-
-            // ── 코너 카운팅: '안 보이는' 상태에서 진행 방향이 크게 꺾이면 코너+1 ──
-            bool playerSees = PlayerCanSeeMonster(); // 플레이어가 몬스터를 보는지도 반영
-            if (!seenByFOV && !playerSees)
-            {
-                Vector3 vel = _agent.desiredVelocity; vel.y = 0f;
-                if (vel.sqrMagnitude > 0.0001f)
-                {
-                    Vector3 dir = vel.normalized;
-                    if (_lastMoveDir == Vector3.zero) _lastMoveDir = dir;
-
-                    float ang = Vector3.Angle(_lastMoveDir, dir);
-                    float moved = Vector3.Distance(transform.position, _lastCornerPos);
-
-                    if (ang >= cornerAngleDeg && moved >= cornerMinDist)
-                    {
-                        _losCornerCount++;
-                        _lastCornerPos = transform.position;
-                        _lastMoveDir   = dir;
-                        // Debug.Log($"Corner++ => #{_losCornerCount}");
-                    }
-                    else
-                    {
-                        _lastMoveDir = dir;
-                    }
-                }
-            }
-            else
-            {
-                // 누군가에게라도 보이면 카운트 리셋
-                _losCornerCount = 0;
-                _lastCornerPos  = transform.position;
-                _lastMoveDir    = Vector3.zero;
-            }
-
-            // ── 스턱 브레이커 ──
-            bool verySlow = _agent.velocity.sqrMagnitude < stuckSpeedEps * stuckSpeedEps;
-            bool noPath   = !_agent.hasPath || _agent.pathPending;
-            bool nearEnd  = _agent.hasPath && _agent.remainingDistance <= arriveTolerance + 0.2f;
-
-            if (verySlow || noPath || nearEnd) _stuckTimer += dt; else _stuckTimer = 0f;
-
-            if (_stuckTimer >= stuckCheckTime)
-            {
-                _stuckTimer = 0f;
-                var newCover = FindCoverPoint();
-                if ((newCover - transform.position).sqrMagnitude > 0.5f * 0.5f)
-                    SetDestinationOnNavMesh(newCover);
-                else
-                {
-                    // 정말 갈 곳 없으면 복귀
-                    _losCornerCount = 0;
-                    _lastCornerPos  = transform.position;
-                    _lastMoveDir    = Vector3.zero;
-                    SetState(MoveState.Scan);
-                }
-            }
-            return;
-        }
-
-        // 스캔: 회전 + 슬쩍 배회 + 발전기 주기 탐색
-        if (CurrentState == MoveState.Scan)
-        {
-            _scanTimer -= dt;
-            transform.Rotate(0f, _scanDir * scanAngularSpeed * dt, 0f);
-
-            _searchTimer -= dt;
-            if (_searchTimer <= 0f)
-            {
-                _searchTimer = searchInterval;
-                _targetGen = FindNearestGenerator();
-                if (_targetGen != null)
-                {
-                    SetDestinationOnNavMesh(_targetGen.transform.position);
-                    SetState(_stamina > 0.01f ? MoveState.Run : MoveState.Walk);
-                    return;
-                }
-            }
-
-            if (!HasPath() || Arrived(_roamTarget)) PickNewRoamPoint();
-            SetDestinationOnNavMesh(_roamTarget);
-
-            if (_scanTimer <= 0f) { _scanTimer = scanDuration; _scanDir *= -1; }
-            return;
-        }
-
-        // 발전기 중심 로직
-        _searchTimer -= dt;
-
-        if (_targetGen == null || _targetGen.IsCompleted)
-        {
-            if (_searchTimer <= 0f)
-            {
-                _searchTimer = searchInterval;
-                _targetGen = FindNearestGenerator();
-            }
-
-            if (_targetGen == null)
-            {
-                if (!HasPath() || Arrived(_roamTarget)) PickNewRoamPoint();
-                _isWorking = false;
-                SetState(MoveState.Scan);
-                return;
-            }
-        }
-
-        SetDestinationOnNavMesh(_targetGen.transform.position);
-
-        float sq = SqrXZ(transform.position, _targetGen.transform.position);
-        _isWorking = (sq <= interactRadius * interactRadius && !_targetGen.IsCompleted);
+        // MLMonsterAgent가 IMonsterStatus를 구현하므로 그대로 읽으면 됨
+        return _monsterStatus != null && _monsterStatus.Mode == MonsterMode.Chase;
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // 상태/스태미너/소리
-    void StateAndStaminaUpdate(float dt, bool seenByFOV)
+    
+    // ─────────────────────────────────────────────
+    void FleeTick(float dt)
     {
-        bool hasGen = _targetGen != null && !_targetGen.IsCompleted;
-        bool movingToGen = hasGen && !_isWorking;
-        bool agentMoving = _agent.velocity.sqrMagnitude > 0.05f;
+        if (!_muteNoise && Time.time - _fleeEnterTime >= fleeSilenceDelay)
+            _muteNoise = true;
 
-        if (CurrentState == MoveState.Flee)
-        {
-            bool playerSees = PlayerCanSeeMonster();
+        // 스턱 → 다른 앵커
+        bool movingSlow = _agent.velocity.sqrMagnitude < stuckSpeedEps * stuckSpeedEps;
+        bool farFromDest = _agent.hasPath && _agent.remainingDistance > (anchorArriveTol + 0.4f);
+        if (movingSlow && farFromDest) _stuckTimer += dt; else _stuckTimer = 0f;
+        if (_stuckTimer >= stuckCheckTime) { _stuckTimer = 0f; HopToAnotherAnchor(); }
 
-            if (seenByFOV || playerSees)
-            {
-                // 누군가에게라도 '보이면' → 전력질주(소리=Run/Exhaustion)
-                SetCrouch(false);
-                CallNoise((noise && _stamina <= maxStamina * noise.breathRangeMul)
-                          ? CharacterMoveState.Exhaustion
-                          : CharacterMoveState.Run);
-                _stamina = Mathf.Max(0f, _stamina - runDrainPerSec * dt);
-                _isRecovering = false; _healTimer = 0f;
-            }
-            else
-            {
-                // 안 보임: 코너 n회 전까지는 계속 Run(먼저 거리 벌림)
-                if (_losCornerCount < cornersToCrouch)
-                {
-                    SetCrouch(false);
-                    CallNoise((noise && _stamina <= maxStamina * noise.breathRangeMul)
-                              ? CharacterMoveState.Exhaustion
-                              : CharacterMoveState.Run);
-                    _stamina = Mathf.Max(0f, _stamina - runDrainPerSec * dt);
-                    _isRecovering = false; _healTimer = 0f;
-                }
-                else
-                {
-                    // 코너 n회 달성 후 → 앉은 무음 도망
-                    SetCrouch(true);
-                    CallNoise(CharacterMoveState.Idle); // idle/crouch = 무음
-                }
-            }
-        }
-        else if (CurrentState == MoveState.Scan)
+        // 앵커 도착 후 처리
+        if (AtFleeGoal())
         {
-            if (preferCrouchWhileRoam) { SetCrouch(true); CallNoise(CharacterMoveState.Crouch); }
-            else                       { SetCrouch(false); CallNoise(agentMoving ? CharacterMoveState.Walk : CharacterMoveState.Idle); }
+            if (IsMonsterChasing()) HopToAnotherAnchor(); // 계속 추격 중이면 다음 앵커
+            else { _muteNoise = false; State = MoveState.Scan; } // 아니면 복귀
         }
-        else if (_isWorking)
+
+        CallNoise(_muteNoise ? CharacterMoveState.Idle : CharacterMoveState.Run);
+    }
+
+    bool AtFleeGoal()
+    {
+        if (_currentAnchor != null) return Arrived(_currentAnchor.position, anchorArriveTol);
+        return _agent.hasPath && _agent.remainingDistance <= anchorArriveTol + 0.2f;
+    }
+
+    void HopToAnotherAnchor()
+    {
+        var next = PickAnchor(IsMonsterChasing(), excludeIndex: _lastAnchorIndex);
+        if (next != null)
         {
-            // 작업 중엔 Walk 소리(요구사항)
-            SetCrouch(false);
-            SetState(MoveState.Walk);
-            CallNoise(CharacterMoveState.Walk);
-        }
-        else if (movingToGen)
-        {
-            if (_stamina > 0.01f)
-            {
-                SetCrouch(false);
-                SetState(MoveState.Run);
-                CallNoise((noise && _stamina <= maxStamina * noise.breathRangeMul)
-                          ? CharacterMoveState.Exhaustion
-                          : CharacterMoveState.Run);
-                _stamina = Mathf.Max(0f, _stamina - runDrainPerSec * dt);
-                _isRecovering = false; _healTimer = 0f;
-            }
-            else
-            {
-                SetCrouch(false);
-                SetState(MoveState.Walk);
-                CallNoise(CharacterMoveState.Walk);
-            }
+            _currentAnchor = next;
+            _lastAnchorIndex = _anchors.IndexOf(_currentAnchor);
+            SetDestinationOnNavMesh(_currentAnchor.position);
         }
         else
         {
-            // 일반 배회
-            if (agentMoving)
-            {
-                if (preferCrouchWhileRoam) { SetCrouch(true);  CallNoise(CharacterMoveState.Crouch); }
-                else                        { SetCrouch(false); CallNoise(CharacterMoveState.Walk); }
-            }
-            else
-            {
-                SetCrouch(false);
-                SetState(MoveState.Idle);
-                CallNoise(CharacterMoveState.Idle);
-            }
-        }
-
-        // 회복(달리지 않을 때)
-        bool sprintingNow = (CurrentState == MoveState.Run || (CurrentState == MoveState.Flee && (seenByFOV || PlayerCanSeeMonster() || _losCornerCount < cornersToCrouch)));
-        if (!sprintingNow)
-        {
-            if (!_isRecovering)
-            {
-                _healTimer += dt;
-                if (_healTimer >= staminaHealDelay) _isRecovering = true;
-            }
-            if (_isRecovering)
-            {
-                float regen = CurrentState switch
-                {
-                    MoveState.Crouch => regenPerSecCrouch,
-                    MoveState.Walk   => regenPerSecWalk,
-                    MoveState.Scan   => regenPerSecIdle,
-                    _                => regenPerSecIdle
-                };
-                _stamina = Mathf.Min(maxStamina, _stamina + regen * dt);
-            }
-        }
-
-        // 탈진 진입
-        if ((CurrentState == MoveState.Run || (CurrentState == MoveState.Flee && (seenByFOV || PlayerCanSeeMonster() || _losCornerCount < cornersToCrouch))) && _stamina <= 0f)
-        {
-            SetState(MoveState.Exhaustion);
-            CallNoise(CharacterMoveState.Exhaustion);
+            Vector3 fallback = ComputeSimpleFleePoint();
+            SetDestinationOnNavMesh(fallback);
+            _currentAnchor = null;
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // 이동/회전
-    void MoveUpdate(float dt)
+    void BrainWork(float dt)
     {
-        if ((CurrentState != MoveState.Flee && CurrentState != MoveState.Scan) &&
-            (_targetGen == null || _targetGen.IsCompleted))
+        _searchTimer -= dt;
+        if ((_targetGen == null || _targetGen.IsCompleted) && _searchTimer <= 0f)
         {
-            SetDestinationOnNavMesh(_roamTarget);
+            _searchTimer = searchInterval;
+            _targetGen = FindNearestGenerator();
         }
 
-        // 부드러운 회전(steeringTarget 바라보기)
-        if (_agent.hasPath)
+        if (_targetGen != null)
+        {
+            SetDestinationOnNavMesh(_targetGen.transform.position);
+            CallNoise(CharacterMoveState.Walk);
+        }
+        else
+        {
+            if (!_agent.hasPath || Arrived(_roamTarget)) PickNewRoamPoint();
+            SetDestinationOnNavMesh(_roamTarget);
+            CallNoise(CharacterMoveState.Walk);
+        }
+    }
+
+    // ── RunObj 앵커 선택 ──
+    Transform PickAnchor(bool chasing, int excludeIndex = -1)
+    {
+        if (_anchors == null || _anchors.Count == 0) return null;
+
+        Vector3 away = Vector3.forward;
+        if (monster)
+        {
+            away = (transform.position - monster.position); away.y = 0f;
+            if (away.sqrMagnitude < 1e-6f) away = transform.forward;
+            away.Normalize();
+        }
+
+        float bestScore = float.NegativeInfinity;
+        Transform best = null;
+
+        for (int i = 0; i < _anchors.Count; i++)
+        {
+            if (i == excludeIndex) continue;
+            var a = _anchors[i];
+            if (!a) continue;
+
+            if (!TryPickClear(a.position, out var clearPos)) continue;
+
+            float distBoss = monster ? Vector3.Distance(clearPos, monster.position) : 0f;
+            float distMe   = Vector3.Distance(clearPos, transform.position);
+            float awayDot  = monster ? Vector3.Dot((clearPos - transform.position).normalized, away) : 0f;
+            float clearance= Mathf.Min(GetEdgeClearance(clearPos), 2f);
+
+            float score =
+                distBoss * 0.7f +
+                Mathf.Max(awayDot, 0f) * (chasing ? 4.5f : 3.0f) +
+                clearance * 1.6f -
+                distMe * 0.15f;
+
+            if (score > bestScore) { bestScore = score; best = a; }
+        }
+
+        return best;
+    }
+
+    // 앵커가 없을 때: 간단한 반대방향 포인트(안티트랩 보정)
+    Vector3 ComputeSimpleFleePoint()
+    {
+        if (!monster) return transform.position;
+
+        if (TryPushOffWall(out var push)) return push;
+
+        Vector3 away = (transform.position - monster.position); away.y = 0f;
+        if (away.sqrMagnitude < 1e-6f) away = transform.forward;
+        away.Normalize();
+
+        Vector3 raw = monster.position + away * 12f;
+        if (TryPickClear(raw, out var pos)) return pos;
+        return transform.position + away * 3f;
+    }
+
+    // ── Movement / Look / Anim ──
+    void MoveUpdate(float dt)
+    {
+        bool working = _targetGen && !_targetGen.IsCompleted &&
+                       SqrXZ(transform.position, _targetGen.transform.position) <= interactRadius * interactRadius &&
+                       State != MoveState.Flee;
+
+        if (_agent.hasPath && !working)
         {
             Vector3 to = _agent.steeringTarget - transform.position; to.y = 0f;
             if (to.sqrMagnitude > 0.0001f)
             {
                 var rot = Quaternion.LookRotation(to.normalized, Vector3.up);
-                transform.rotation = Quaternion.RotateTowards(transform.rotation, rot, rotationSpeed * dt);
+                transform.rotation = Quaternion.RotateTowards(transform.rotation, rot, turnSpeed * dt);
             }
         }
 
-        // 속도 선택(보이면 Run / 안 보이면 코너 n회 전엔 Run, 후엔 Crouch)
-        float speed = CurrentState switch
-        {
-            MoveState.Flee       => ((IsMonsterSeeingMe() || PlayerCanSeeMonster() || _losCornerCount < cornersToCrouch) ? runSpeed : crouchSpeed),
-            MoveState.Run        => runSpeed,
-            MoveState.Crouch     => crouchSpeed,
-            MoveState.Exhaustion => exhaustionSpeed,
-            MoveState.Walk       => walkSpeed,
-            MoveState.Scan       => preferCrouchWhileRoam ? crouchSpeed : walkSpeed,
-            _                    => 0f
-        };
-        _agent.speed = speed;
-        _agent.isStopped = speed <= 0.01f;
+        _agent.speed = (State == MoveState.Flee || State == MoveState.Run) ? runSpeed : walkSpeed;
+        _agent.isStopped = _agent.speed <= 0.01f;
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // 작업 시작/중지
+    void WorkLookTick(float dt)
+    {
+        bool working = _targetGen && !_targetGen.IsCompleted &&
+                       SqrXZ(transform.position, _targetGen.transform.position) <= interactRadius * interactRadius &&
+                       State != MoveState.Flee;
+
+        if (!workLookWhileWorking || !working) { _workLookTimer = workLookInterval; return; }
+
+        _workLookTimer -= dt;
+        if (_workLookTimer <= 0f)
+        {
+            _workLookTimer = workLookInterval;
+            _workTargetYaw = Mathf.Repeat(transform.eulerAngles.y + workSnapAngle, 360f); // 90°
+        }
+
+        float curYaw = transform.eulerAngles.y;
+        float newYaw = Mathf.MoveTowardsAngle(curYaw, _workTargetYaw, workLookAngularSpeed * dt);
+        transform.rotation = Quaternion.Euler(0f, newYaw, 0f);
+    }
+
     void WorkUpdate()
     {
         if (_targetGen == null) return;
-
         float sq = SqrXZ(transform.position, _targetGen.transform.position);
-        if (sq <= interactRadius * interactRadius && !_targetGen.IsCompleted && CurrentState != MoveState.Flee)
+        if (sq <= interactRadius * interactRadius && !_targetGen.IsCompleted && State != MoveState.Flee)
             _targetGen.TryBeginWork(gameObject);
         else
             _targetGen.EndWork(gameObject);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // 애니메이션 파라미터
     void UpdateAnimator()
     {
         if (!anim) return;
-
         bool moving = _agent.velocity.sqrMagnitude > 0.05f;
-        bool seen   = IsMonsterSeeingMe();
-
-        anim.SetBool("Crouch", _isCrouch);
-        anim.SetBool("CrouchWalk", _isCrouch && moving);
-        anim.SetBool("Run", !_isCrouch && (CurrentState == MoveState.Run || CurrentState == MoveState.Flee) && seen && moving);
-        anim.SetBool("Walk", !_isCrouch && ((CurrentState == MoveState.Walk || CurrentState == MoveState.Scan) || (CurrentState == MoveState.Flee && !seen)) && moving);
+        anim.SetBool("Run",  (State == MoveState.Flee) && moving);
+        anim.SetBool("Walk", (State == MoveState.Walk || State == MoveState.Scan) && moving);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Helper 함수들
+    // ── LOS & Helpers ──
+    bool PlayerSeesMonster()
+    {
+        if (!monster || !playerEye) return false;
+
+        Vector3 from = playerEye.position;
+        Vector3 to   = monster.position;
+        Vector3 v    = to - from;
+
+        if (v.magnitude > seeFleeViewDist) return false;
+        Vector3 fwd = playerEye.forward; fwd.y = 0f;
+        Vector3 flat = v; flat.y = 0f;
+        if (Vector3.Angle(fwd, flat) > playerFOVHalfAngle) return false;
+
+        if (Physics.Raycast(from, v.normalized, out var hit, seeFleeViewDist, playerObstacleMask))
+            return false;
+
+        return true;
+    }
+
+    bool Arrived(Vector3 target, float tol = -1f)
+    {
+        float t = (tol > 0f) ? tol : arriveTolerance;
+        Vector3 a = transform.position; a.y = 0f;
+        Vector3 b = target; b.y = 0f;
+        return (a - b).sqrMagnitude <= t * t;
+    }
+
+    float DistanceToMonster()
+    {
+        if (!monster) return float.MaxValue;
+        return Vector3.Distance(transform.position, monster.position);
+    }
+
+    void SetDestinationOnNavMesh(Vector3 world)
+    {
+        if (NavMesh.SamplePosition(world, out var hit, 2f, NavMesh.AllAreas))
+        {
+            var path = new NavMeshPath();
+            if (NavMesh.CalculatePath(transform.position, hit.position, NavMesh.AllAreas, path) &&
+                path.status == NavMeshPathStatus.PathComplete)
+            {
+                if (!_agent.hasPath || (hit.position - _agent.destination).sqrMagnitude > 0.04f)
+                    _agent.SetDestination(hit.position);
+            }
+        }
+    }
+
+    static float SqrXZ(Vector3 a, Vector3 b) { a.y=0; b.y=0; return (a-b).sqrMagnitude; }
+
+    void PickNewRoamPoint()
+    {
+        for (int i = 0; i < 10; i++)
+        {
+            Vector2 c = Random.insideUnitCircle * roamRadius;
+            Vector3 cand = _spawn + new Vector3(c.x, 0, c.y);
+            if (NavMesh.SamplePosition(cand, out var hit, 2.5f, NavMesh.AllAreas))
+            { _roamTarget = hit.position; return; }
+        }
+        _roamTarget = _spawn;
+    }
+
     Generator FindNearestGenerator()
     {
         Generator[] gens = GameObject.FindObjectsOfType<Generator>();
@@ -533,161 +422,61 @@ public class TestPlayerMove : MonoBehaviour
         return best;
     }
 
-    void PickNewRoamPoint()
-    {
-        for (int i = 0; i < 8; i++)
-        {
-            Vector2 c = Random.insideUnitCircle * roamRadius;
-            Vector3 candidate = _spawn + new Vector3(c.x, 0, c.y);
-            if (NavMesh.SamplePosition(candidate, out var hit, 2.5f, NavMesh.AllAreas))
-            {
-                _roamTarget = hit.position;
-                return;
-            }
-        }
-        _roamTarget = _spawn; // 실패 시 원점
-    }
-
-    void SetDestinationOnNavMesh(Vector3 worldTarget)
-    {
-        if (NavMesh.SamplePosition(worldTarget, out var hit, 2f, NavMesh.AllAreas))
-        {
-            if (!_agent.hasPath || (_agent.destination - hit.position).sqrMagnitude > 0.04f)
-                _agent.SetDestination(hit.position);
-        }
-    }
-
-    void SetState(MoveState s) => CurrentState = s;
-
-    void SetCrouch(bool on)
-    {
-        if (_isCrouch == on) return;
-        _isCrouch = on;
-        if (cam)
-        {
-            float y = on ? crouchHeight : standHeight;
-            cam.localPosition = new Vector3(cam.localPosition.x, y, cam.localPosition.z);
-        }
-    }
-
     void CallNoise(CharacterMoveState st)
     {
+        if (_muteNoise) return; // Flee 3초 후 무음
         if (noise != null) noise.SetState(st);
     }
 
-    static float SqrXZ(Vector3 a, Vector3 b)
+    // ── Anti-Trap ──
+    float GetEdgeClearance(Vector3 p)
     {
-        a.y = 0; b.y = 0; return (a - b).sqrMagnitude;
+        if (NavMesh.FindClosestEdge(p, out var edge, NavMesh.AllAreas))
+            return edge.distance;
+        return Mathf.Infinity;
     }
 
-    bool HasPath() => _agent.hasPath && !_agent.pathPending;
-
-    bool Arrived(Vector3 target, float tol = -1f)
+    bool TryPickClear(Vector3 raw, out Vector3 pos)
     {
-        float t = (tol > 0f) ? tol : arriveTolerance;
-        float sq = SqrXZ(transform.position, target);
-        return sq <= t * t;
-    }
-
-    float DistanceToMonster()
-    {
-        if (!monster) return float.MaxValue;
-        return Vector3.Distance(transform.position, monster.position);
-    }
-
-    // ── 10m 근접 경보(시야 무관) ──
-    bool IsMonsterVeryClose()
-    {
-        if (!monster) return false;
-        return DistanceToMonster() <= proximityAlertRadius;
-    }
-
-    // ── 몬스터 시야 판정(전방 40° + LOS) ──
-    bool IsMonsterSeeingMe()
-    {
-        if (!monster) return false;
-        Transform eye = monsterEye ? monsterEye : monster;
-
-        Vector3 from = eye.position;
-        Vector3 to   = transform.position;
-        Vector3 v    = to - from;
-
-        if (v.magnitude > monsterViewDistance) return false;
-
-        Vector3 fwd = monster.forward; fwd.y = 0f;
-        Vector3 flat = v; flat.y = 0f;
-        if (Vector3.Angle(fwd, flat) > fovHalfAngle) return false;
-
-        // 가림체에 막히면 '안 보임'
-        if (Physics.Raycast(from, v.normalized, out var hit, monsterViewDistance, obstacleMask))
+        pos = raw;
+        if (!NavMesh.SamplePosition(raw, out var hit, 3f, NavMesh.AllAreas))
             return false;
 
-        return true;
-    }
-
-    // ── 플레이어 시야 판정(플레이어가 몬스터를 볼 수 있는가) ──
-    bool PlayerCanSeeMonster()
-    {
-        if (!monster || !playerEye) return false;
-
-        Vector3 from = playerEye.position;
-        Vector3 to   = monster.position;
-        Vector3 v    = to - from;
-
-        if (v.magnitude > playerViewDistance) return false;
-
-        Vector3 fwd = playerEye.forward; fwd.y = 0f;
-        Vector3 flat = v; flat.y = 0f;
-        if (Vector3.Angle(fwd, flat) > playerFOVHalfAngle) return false;
-
-        if (Physics.Raycast(from, v.normalized, out var hit, playerViewDistance, playerObstacleMask))
-            return false;
-
-        return true;
-    }
-
-    // ── LOS가 끊기는 커버 포인트 탐색(링 샘플 + 가림 점수) ──
-    Vector3 FindCoverPoint()
-    {
-        Vector3 best = transform.position;
-        float bestScore = float.NegativeInfinity;
-        Transform eye = monsterEye ? monsterEye : monster;
-
-        float baseRadius = Mathf.Max(4f, fleeDistance * 0.6f);
-        int   rings = 2;
-        int   samplesPerRing = 12;
-
-        for (int r = 0; r < rings; r++)
+        if (GetEdgeClearance(hit.position) < minWallClearance)
         {
-            float rad = baseRadius + r * 4f;
-            for (int i = 0; i < samplesPerRing; i++)
+            if (NavMesh.FindClosestEdge(hit.position, out var edge, NavMesh.AllAreas))
             {
-                float ang = (i / (float)samplesPerRing) * Mathf.PI * 2f;
-                Vector3 dir = new Vector3(Mathf.Cos(ang), 0, Mathf.Sin(ang));
-                Vector3 candidate = transform.position + dir * rad;
-
-                if (!NavMesh.SamplePosition(candidate, out var hit, 2.5f, NavMesh.AllAreas))
-                    continue;
-
-                bool covered = false;
-                if (monster)
-                {
-                    Vector3 from = eye ? eye.position : monster.position;
-                    Vector3 to   = hit.position + Vector3.up * 0.2f;
-                    Vector3 ray  = (to - from);
-                    if (Physics.Raycast(from, ray.normalized, out var h, ray.magnitude, obstacleMask))
-                        covered = true;
-                }
-
-                float distToMonster = monster ? Vector3.Distance(hit.position, monster.position) : 0f;
-                float distFromMe    = Vector3.Distance(hit.position, transform.position);
-
-                // 점수: 가려지면 +, 몬스터와 멀수록 +, 너무 멀면 -
-                float score = (covered ? 10f : 0f) + distToMonster * 0.6f - distFromMe * 0.15f;
-
-                if (score > bestScore) { bestScore = score; best = hit.position; }
+                Vector3 nudged = hit.position + edge.normal *
+                                 (minWallClearance - edge.distance + 0.2f);
+                if (!NavMesh.SamplePosition(nudged, out hit, 2f, NavMesh.AllAreas))
+                    return false;
+                if (GetEdgeClearance(hit.position) < minWallClearance) return false;
             }
+            else return false;
         }
-        return best;
+
+        var path = new NavMeshPath();
+        if (!NavMesh.CalculatePath(transform.position, hit.position, NavMesh.AllAreas, path))
+            return false;
+        if (path.status != NavMeshPathStatus.PathComplete) return false;
+
+        pos = hit.position;
+        return true;
+    }
+
+    bool TryPushOffWall(out Vector3 dest)
+    {
+        dest = transform.position;
+        if (!NavMesh.FindClosestEdge(transform.position, out var edge, NavMesh.AllAreas))
+            return false;
+        if (edge.distance >= minWallClearance) return false;
+
+        Vector3 dir = (edge.normal + transform.forward).normalized;
+        Vector3 raw = transform.position + dir *
+                      Mathf.Max(pushOffWallDistance, minWallClearance - edge.distance + 0.5f);
+
+        if (NavMesh.SamplePosition(raw, out var hit, 2.5f, NavMesh.AllAreas))
+        { dest = hit.position; return true; }
+        return false;
     }
 }

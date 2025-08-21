@@ -55,7 +55,7 @@ MonoBehaviour:
   hasUpgradedFromAgentParameters: 1
   MaxStep: 0
   player: {fileID: 0}
-  eye: {fileID: 0}
+  eye: {fileID: 4593363246481872050}
   occlusionMask:
     serializedVersion: 2
     m_Bits: 64
@@ -65,6 +65,8 @@ MonoBehaviour:
   investigateHoldTime: 2
   catchDistance: 1.4
   episodeTime: 80
+  pathEvalInterval: 0.5
+  idleAfterHitSeconds: 5
   anim: {fileID: 8540056168888499148}
   speedParam: Speed
   chaseBool: IsChasing
@@ -999,3 +1001,9 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!4 &4593363246481872050 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -4920617512599765381, guid: c3d73ba06daaeef40b556c623d33fc02,
+    type: 3}
+  m_PrefabInstance: {fileID: 290644871122758345}
+  m_PrefabAsset: {fileID: 0}
