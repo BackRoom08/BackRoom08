@@ -13717,11 +13717,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: EyeMonter
       objectReference: {fileID: 0}
-    - target: {fileID: 4818440572007537022, guid: 9a0942c736f03874d91d96fff43f914c,
-        type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0.749
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -23896,8 +23891,11 @@ MonoBehaviour:
     inventoryItems: []
     selectedInventoryIndex: -1
   allItemDatas:
-  - {fileID: 11400000, guid: 3033e48c64f203742b654d126ed000c9, type: 2}
-  - {fileID: 11400000, guid: 240d92df0dd83854b8a8874bdf6c6c21, type: 2}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
 --- !u!4 &2036850614
 Transform:
   m_ObjectHideFlags: 0

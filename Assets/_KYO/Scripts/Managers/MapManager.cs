@@ -61,6 +61,7 @@ public class MapManager : MonoBehaviour
     void FindAndAssignDeadRoomPoint() //DeadRoom 찾아서 이동포인트 등록(데드씬용)
     {
         GameObject deadRoomObject = GameObject.Find("DeadRoom");
+        
         if (deadRoomObject != null)
         {
             playerDeadRoomPoint = deadRoomObject.transform.Find("PlayerPoint");

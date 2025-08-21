@@ -6,7 +6,10 @@ public class EnemyEyeLightMob : EnemyController
 {
     [SerializeField] private float chaseDistance = 150f; // 추격 시작 거리
     [SerializeField] private float lostDistance = 151f;  // 플레이어를 놓치는 거리
-    [SerializeField] private Collider hitBox; // 공격 범위 히트박스
+   
+    [SerializeField] private GameObject hitBoxObject; // 히트박스 오브젝트
+    [SerializeField] private float attackDelay = 0.5f; // 공격 타이밍
+    [SerializeField] private float attackCooldown = 1.5f;
 
     private bool isChasing = false; // 현재 추격 중인지 여부
     private EnemyPlayerAttack enemyAttack; // 공격 스크립트 참조
@@ -27,8 +30,11 @@ public class EnemyEyeLightMob : EnemyController
         // 공격 스크립트 컴포넌트를 가져옴
         enemyAttack = GetComponent<EnemyPlayerAttack>();
 
-        if (hitBox != null)
-            hitBox.enabled = false;
+        if (hitBoxObject != null)
+        {
+            hitBoxObject.SetActive(false); // 시작 시 비활성화
+        }
+
     }
 
 
@@ -36,52 +42,28 @@ public class EnemyEyeLightMob : EnemyController
     {
         if (player == null || isStunned) return;
         base.Update();
-    }
-    // 플레이어와 충돌 시 공격 스크립트
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("Player") && !isAttacking && !isStunned)
+        if (!isAttacking && Vector3.Distance(transform.position, player.position) < 2f)
         {
             StartCoroutine(AttackRoutine());
         }
+
     }
 
     private IEnumerator AttackRoutine()
     {
         isAttacking = true;
-        agent.isStopped = true; // 공격 중 이동 멈춤
-        OnAttack();
+        agent.isStopped = true;
 
-        yield return new WaitForSeconds(1f); // 애니메이션 시작 후 1초 대기
+        animator.SetTrigger("Attack");
+        yield return new WaitForSeconds(attackDelay);
 
-        EnableHitBox(); // 히트박스 활성화
+        EnableHitBox();
+        yield return new WaitForSeconds(0.3f);
+        DisableHitBox();
 
-        yield return new WaitForSeconds(0.2f); // 히트박스 유지 시간 (짧게)
-
-        CheckHit(); // 히트박스 안에 플레이어가 있으면 데미지 적용
-        DisableHitBox(); // 히트박스 비활성화
-
-        yield return new WaitForSeconds(0.5f); // 애니메이션 마무리 시간
-
+        yield return new WaitForSeconds(attackCooldown);
         agent.isStopped = false;
         isAttacking = false;
-    }
-
-    private void CheckHit()
-    {
-        Collider[] hits = Physics.OverlapBox(hitBox.bounds.center, hitBox.bounds.extents, hitBox.transform.rotation);
-        foreach (var hit in hits)
-        {
-            if (hit.CompareTag("Player"))
-            {
-                PlayerStatus status = hit.GetComponent<PlayerStatus>();
-                if (status != null)
-                {
-                    status.HealMentalHP(-50);
-                    Debug.Log("1초 후 정신력 데미지 적용됨");
-                }
-            }
-        }
     }
 
     public void OnFlashHit()
@@ -137,29 +119,18 @@ public class EnemyEyeLightMob : EnemyController
         return !isStunned;
     }
 
-    //애니메이션 재생시 히트박스 활성화
-    public void EnableHitBox()
+   
+    //히트박스 활성화
+    private void EnableHitBox()
     {
-        hitBox.enabled = true;
-        Debug.Log("히트박스 활성화됨");
-
+        if (hitBoxObject != null)
+            hitBoxObject.SetActive(true);
     }
 
-    //애니메이션 종료시 히트박스 비활성화
-    public void DisableHitBox()
+    private void DisableHitBox()
     {
-        hitBox.enabled = false;
-        Debug.Log("히트박스 비활성화됨");
-
-    }
-
-    protected override void OnAttack()
-    {
-        if (animator != null)
-        {
-            animator.SetTrigger("Attack");
-            Debug.Log("공격 애니메이션 트리거 실행됨");
-        }
+        if (hitBoxObject != null)
+            hitBoxObject.SetActive(false);
     }
 
 

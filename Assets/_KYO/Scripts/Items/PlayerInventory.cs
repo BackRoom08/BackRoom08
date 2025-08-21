@@ -70,16 +70,6 @@ public class PlayerInventory : MonoBehaviour
 
         yield return new WaitUntil(() => itemSlot.All(slot => slot != null)); //모든 슬롯이 초기화될때까지 대기
 
-        if (GameManager.Instance != null)
-        { //게임매니저가 존재하면 저장된 아이템을 가져와서 인벤토리를 복원함
-            List<ItemDatas> savedItems = GameManager.Instance.GetSavedInventory();
-            RestoreInventory(savedItems);
-        }
-        selectedIndex = GameManager.Instance.PlayerData.selectedInventoryIndex;
-        if (selectedIndex >= 0)
-            selectSlot(selectedIndex);
-
-
     }
     void Start()
     {
@@ -99,7 +89,7 @@ public class PlayerInventory : MonoBehaviour
         }
     }
 
-    void selectSlot(int index)
+    public void selectSlot(int index)
     { 
         selectedIndex = index;
         for (int i = 0; i < itemSlot.Length; i++)
@@ -214,7 +204,6 @@ public class PlayerInventory : MonoBehaviour
         }
 
         DeselectAllSlot();
-        Debug.Log("인벤토리 복원 완료");
     }
 
     public int GetSelectedIndex()

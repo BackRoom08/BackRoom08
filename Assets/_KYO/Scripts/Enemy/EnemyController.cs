@@ -260,6 +260,6 @@ public class EnemyController : MonoBehaviour
     // 애니메이션 처리 만들어야함
     protected virtual void OnAttack() 
     {
-        animator.SetTrigger("Attack");
+       
     }
 }

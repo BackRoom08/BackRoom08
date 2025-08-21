@@ -665,6 +665,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   flashLightHolPoint: {fileID: 4940102997134146601}
+  equippedFlashLight: {fileID: 0}
   bobAmount: 0.02
   bobSpeed: 6
   flashRange: 15

@@ -1,22 +1,20 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-
 public enum MapQuest
-{ 
+{
     Stage1,
-    Stage2, 
+    Stage2,
     Stage3,
     Stage4,
 }
+
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
     public PlayerData PlayerData = new PlayerData();
-    public List<ItemDatas> allItemDatas;
 
     private PlayerStatus playerStatus;
     private PlayerMove playerMove;
@@ -24,6 +22,8 @@ public class GameManager : MonoBehaviour
     private StateNoiseEmitter noiseEmitter;
 
     string savePath => Application.persistentDataPath + "/playerData.json";
+
+    private readonly string[] playableScenes = { "Stage1", "Stage2", "Stage3", "Stage4" };
 
     void Awake()
     {
@@ -33,150 +33,26 @@ public class GameManager : MonoBehaviour
             DontDestroyOnLoad(gameObject);
         }
         else Destroy(gameObject);
-    }
 
-    void OnEnable()
-    {
-        SceneManager.sceneLoaded += OnSceneLoaded;
-    }
-
-    void OnDisable()
-    {
-        SceneManager.sceneLoaded -= OnSceneLoaded;
-    }
-
-    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        ApplyPlayerDataToPlayer();
+        SavePlayerStatus();
     }
 
     void Start()
     {
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
-
-        playerStatus = player.GetComponent<PlayerStatus>();
-        playerMove = player.GetComponent<PlayerMove>();
-        flashLight = player.GetComponent<FlashLight>();
-        noiseEmitter = player.GetComponent<StateNoiseEmitter>();
-
-        InitializePlayerData();
+        SavePlayerStatus();
         LoadPlayerDataFromFile();
-        ApplyPlayerDataToPlayer();
+        SceneLoader.Instance.OnSceneLoaded += HandleSceneLoaded;
     }
 
-    void InitializePlayerData()
+    private void HandleSceneLoaded(string sceneName)
     {
-        PlayerData = new PlayerData
+        Debug.Log($"씬 '{sceneName}' 로딩 완료됨.");
+
+        if (playableScenes.Contains(sceneName))
         {
-            maxMentalHP = playerStatus.MentalHP,
-            currentMentalHP = playerStatus.MentalHP,
-            mentalInterval = playerStatus.MentalInterval,
-            mentalDamage = playerStatus.MentalDamage,
-            isDead = false,
-
-            maxStamina = playerMove.maxStamina,
-            currentStamina = playerMove.currentStamina,
-            staminaUseRate = playerMove.StaminaUseRate,
-            staminaHeal = playerMove.staminaHeal,
-            staminaHealDelay = playerMove.staminaHealDelay,
-
-            moveSpeed = playerMove.moveSpeed,
-            sprintSpeed = playerMove.SprintSpeed,
-            crouchSpeed = playerMove.crouchSpeed,
-            jumpForce = playerMove.JumpForce,
-            position = playerMove.transform.position,
-            isCrouching = false,
-
-            crouchHeight = playerMove.crouchHeight,
-            standHeight = playerMove.standHeight,
-
-            inventoryItems = new List<ItemSaveData>(),
-            selectedInventoryIndex = -1
-        };
-    }
-
-    public void ApplyPlayerDataToPlayer()
-    {
-        if (playerStatus == null || playerMove == null)
-        {
-            Debug.LogWarning("플레이어 컴포넌트가 초기화되지 않았습니다.");
-            return;
+            Debug.Log("플레이어가 존재하는 씬입니다. 데이터 적용 시작.");
+            ApplyPlayerDataToPlayer();
         }
-
-        playerStatus.MentalHP = PlayerData.currentMentalHP;
-        playerStatus.MentalInterval = PlayerData.mentalInterval;
-        playerStatus.MentalDamage = PlayerData.mentalDamage;
-
-        playerMove.maxStamina = PlayerData.maxStamina;
-        playerMove.currentStamina = PlayerData.currentStamina;
-        playerMove.StaminaUseRate = PlayerData.staminaUseRate;
-        playerMove.staminaHeal = PlayerData.staminaHeal;
-        playerMove.staminaHealDelay = PlayerData.staminaHealDelay;
-
-        playerMove.moveSpeed = PlayerData.moveSpeed;
-        playerMove.SprintSpeed = PlayerData.sprintSpeed;
-        playerMove.crouchSpeed = PlayerData.crouchSpeed;
-        playerMove.JumpForce = PlayerData.jumpForce;
-        playerMove.transform.position = PlayerData.position;
-
-        playerMove.crouchHeight = PlayerData.crouchHeight;
-        playerMove.standHeight = PlayerData.standHeight;
-
-        List<ItemDatas> loadedInventory = LoadInventory();
-        PlayerInventory inventory = FindObjectOfType<PlayerInventory>();
-        if (inventory != null)
-        {
-            inventory.RestoreInventory(loadedInventory);
-        }
-        else
-        {
-            Debug.LogWarning("PlayerInventory를 찾을 수 없습니다.");
-        }
-
-        Debug.Log("플레이어 데이터 적용 완료");
-    }
-
-    public void SaveInventory(List<ItemDatas> currentInventory)
-    {
-        PlayerData.inventoryItems.Clear();
-
-        var uniqueItems = currentInventory
-            .Where(item => item != null)
-            .GroupBy(item => item.uid)
-            .Select(group => group.First())
-            .ToList();
-
-        foreach (ItemDatas item in uniqueItems)
-        {
-            ItemSaveData saveData = new ItemSaveData
-            {
-                uid = item.uid,
-                itemName = item.itemName,
-                type = item.type
-            };
-            PlayerData.inventoryItems.Add(saveData);
-        }
-    }
-
-    public List<ItemDatas> LoadInventory()
-    {
-        List<ItemDatas> loadedInventory = new List<ItemDatas>();
-
-        foreach (ItemSaveData savedItem in PlayerData.inventoryItems)
-        {
-            ItemDatas matchedItem = allItemDatas?.Find(item => item != null && item.uid == savedItem?.uid);
-            if (matchedItem != null)
-            {
-                loadedInventory.Add(matchedItem);
-            }
-        }
-        Debug.Log("인벤토리 로드 완료!");
-        return loadedInventory;
-    }
-
-    public List<ItemDatas> GetSavedInventory()
-    {
-        return LoadInventory();
     }
 
     public void SavePlayerDataToFile()
@@ -194,43 +70,92 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    private IEnumerator WaitAndApplyPlayerData()
+    {
+        yield return new WaitUntil(() => GameObject.FindGameObjectWithTag("Player") != null);
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+
+        playerStatus = player.GetComponent<PlayerStatus>();
+        playerMove = player.GetComponent<PlayerMove>();
+        flashLight = player.GetComponent<FlashLight>();
+        noiseEmitter = player.GetComponent<StateNoiseEmitter>();
+
+        if (playerStatus == null || playerMove == null)
+        {
+            Debug.LogWarning("플레이어 컴포넌트가 초기화되지 않았습니다.");
+            yield break;
+        }
+
+        // 플레이어 상태 복원
+        playerStatus.MentalHP = PlayerData.currentMentalHP;
+        playerStatus.MentalInterval = PlayerData.mentalInterval;
+        playerStatus.MentalDamage = PlayerData.mentalDamage;
+
+        playerMove.maxStamina = PlayerData.maxStamina;
+        playerMove.currentStamina = PlayerData.currentStamina;
+        playerMove.StaminaUseRate = PlayerData.staminaUseRate;
+        playerMove.staminaHeal = PlayerData.staminaHeal;
+        playerMove.staminaHealDelay = PlayerData.staminaHealDelay;
+
+        playerMove.moveSpeed = PlayerData.moveSpeed;
+        playerMove.SprintSpeed = PlayerData.sprintSpeed;
+        playerMove.crouchSpeed = PlayerData.crouchSpeed;
+        playerMove.JumpForce = PlayerData.jumpForce;
+
+        playerMove.crouchHeight = PlayerData.crouchHeight;
+        playerMove.standHeight = PlayerData.standHeight;
+    }
+
+    public void ApplyPlayerDataToPlayer()
+    {
+        StartCoroutine(WaitAndApplyPlayerData());
+    }
+
+    public void SavePlayerStatus()
+    {
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player == null) return;
+
+        playerStatus = player.GetComponent<PlayerStatus>();
+        playerMove = player.GetComponent<PlayerMove>();
+
+        if (playerStatus == null || playerMove == null) return;
+
+        PlayerData.currentMentalHP = playerStatus.MentalHP;
+        PlayerData.mentalInterval = playerStatus.MentalInterval;
+        PlayerData.mentalDamage = playerStatus.MentalDamage;
+
+        PlayerData.maxStamina = playerMove.maxStamina;
+        PlayerData.currentStamina = playerMove.currentStamina;
+        PlayerData.staminaUseRate = playerMove.StaminaUseRate;
+        PlayerData.staminaHeal = playerMove.staminaHeal;
+        PlayerData.staminaHealDelay = playerMove.staminaHealDelay;
+
+        PlayerData.moveSpeed = playerMove.moveSpeed;
+        PlayerData.sprintSpeed = playerMove.SprintSpeed;
+        PlayerData.crouchSpeed = playerMove.crouchSpeed;
+        PlayerData.jumpForce = playerMove.JumpForce;
+
+        PlayerData.crouchHeight = playerMove.crouchHeight;
+        PlayerData.standHeight = playerMove.standHeight;
+
+        Debug.Log("플레이어 상태 저장 완료");
+        SavePlayerDataToFile();
+    }
 
     public void InitializeMapQuest(MapQuest map)
     {
         switch (map)
         {
-            case MapQuest.Stage1 :
-                SetupStage1();
-                break;
-            case MapQuest.Stage2 :
-             SetupStage2();
-                break;
-            case MapQuest.Stage3 :
-                SetupStage3();
-                break;
-            case MapQuest.Stage4 :
-                SetupStage4();
-                break;
+            case MapQuest.Stage1: SetupStage1(); break;
+            case MapQuest.Stage2: SetupStage2(); break;
+            case MapQuest.Stage3: SetupStage3(); break;
+            case MapQuest.Stage4: SetupStage4(); break;
         }
     }
 
-    private void SetupStage1()
-    { 
- 
-    }
-    private void SetupStage2()
-    {
-
-    }
-    private void SetupStage3()
-    {
-
-    }
-    private void SetupStage4()
-    {
-
-    }
-
+    private void SetupStage1() { }
+    private void SetupStage2() { }
+    private void SetupStage3() { }
+    private void SetupStage4() { }
 }
-
-
