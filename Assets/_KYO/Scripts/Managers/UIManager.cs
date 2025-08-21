@@ -10,7 +10,7 @@ public class UIManager : MonoBehaviour
     public static UIManager Instance { get; private set; }
     
     [SerializeField] GameSetting settings;  // 설정 데이터
-    
+    public GameSetting Settings { get; }
     
     [SerializeField] GameObject settingsPanel;  // 설정창
     [SerializeField] GameObject loadingPanel;   // 로딩창
@@ -19,6 +19,9 @@ public class UIManager : MonoBehaviour
     [SerializeField] Slider loadingBar;  // 로딩창의 로딩바
     
     [SerializeField] SettingUI settingUI;
+    
+    [SerializeField] Button closeBtn;   // 닫기 버튼
+    [SerializeField] Button quiteBtn;   // 게임종료 버튼
     
     public bool IsPaused { get; private set; }  // 설정창 On/Off
 
@@ -31,6 +34,12 @@ public class UIManager : MonoBehaviour
         settings?.Load();
         ShowSettings(false, force:false);
         ShowLoading(false);
+    }
+    
+    void Start()
+    {
+        closeBtn.onClick.AddListener(OnClickOpenSettings);
+        quiteBtn.onClick.AddListener(QuitGame);
     }
     
     // 설정창 토글방식으로 띄우기 On/Off
@@ -122,7 +131,12 @@ public class UIManager : MonoBehaviour
         settings?.Save();
         // 필요한 값들 매핑
     }
-
+    
+    public void QuitGame()
+    {
+        Application.Quit();
+    }
+    
     /// <summary>
     /// 사망 UI를 1초에 걸쳐 서서히 표시합니다.
     /// </summary>
@@ -146,7 +160,7 @@ public class UIManager : MonoBehaviour
         ResumeGame();
         deadPanel.SetActive(false);
     }
-
+    
     private IEnumerator FadeInDeadUI(float duration)
     {
         deadPanel.SetActive(true); 
