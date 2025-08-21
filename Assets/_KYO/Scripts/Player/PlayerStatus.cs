@@ -29,7 +29,11 @@ public class PlayerStatus : MonoBehaviour
         MentalText = textObj.GetComponent<Text>();
 
         // 데드룸 위치 설정
-        playerDeadRoomPoint = mapManager.playerDeadRoomPoint;
+        mapManager = FindObjectOfType<MapManager>(); // 추가
+        if (mapManager != null)
+        {
+            playerDeadRoomPoint = mapManager.playerDeadRoomPoint;
+        }
 
     }
 
@@ -96,7 +100,7 @@ public class PlayerStatus : MonoBehaviour
         if (cameraScript != null) cameraScript.enabled = false;
 
         // 데드룸 위치로 이동
-        transform.position = mapManager.playerDeadRoomPoint.position;
+        transform.position = playerDeadRoomPoint.position;
 
         // 페이드 인
         mapManager.FadeIn(1.5f);

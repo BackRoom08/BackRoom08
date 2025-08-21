@@ -46,11 +46,11 @@ public class GameManager : MonoBehaviour
 
     private void HandleSceneLoaded(string sceneName)
     {
-        Debug.Log($"씬 '{sceneName}' 로딩 완료됨.");
+        // Debug.Log($"씬 '{sceneName}' 로딩 완료됨.");
 
         if (playableScenes.Contains(sceneName))
         {
-            Debug.Log("플레이어가 존재하는 씬입니다. 데이터 적용 시작.");
+            // Debug.Log("플레이어가 존재하는 씬입니다. 데이터 적용 시작.");
             ApplyPlayerDataToPlayer();
         }
     }
@@ -82,10 +82,29 @@ public class GameManager : MonoBehaviour
 
         if (playerStatus == null || playerMove == null)
         {
-            Debug.LogWarning("플레이어 컴포넌트가 초기화되지 않았습니다.");
+            // Debug.LogWarning("플레이어 컴포넌트가 초기화되지 않았습니다.");
             yield break;
         }
+        
+        PlayerData.currentMentalHP = playerStatus.MentalHP;
+        PlayerData.mentalInterval = playerStatus.MentalInterval;
+        PlayerData.mentalDamage = playerStatus.MentalDamage;
 
+        PlayerData.maxStamina = playerMove.maxStamina;
+        PlayerData.currentStamina = playerMove.currentStamina;
+        PlayerData.staminaUseRate = playerMove.StaminaUseRate;
+        PlayerData.staminaHeal = playerMove.staminaHeal;
+        PlayerData.staminaHealDelay = playerMove.staminaHealDelay;
+
+        PlayerData.moveSpeed = playerMove.moveSpeed;
+        PlayerData.sprintSpeed = playerMove.SprintSpeed;
+        PlayerData.crouchSpeed = playerMove.crouchSpeed;
+        PlayerData.jumpForce = playerMove.JumpForce;
+
+        PlayerData.crouchHeight = playerMove.crouchHeight;
+        PlayerData.standHeight = playerMove.standHeight;
+
+        
         // 플레이어 상태 복원
         playerStatus.MentalHP = PlayerData.currentMentalHP;
         playerStatus.MentalInterval = PlayerData.mentalInterval;
@@ -139,7 +158,7 @@ public class GameManager : MonoBehaviour
         PlayerData.crouchHeight = playerMove.crouchHeight;
         PlayerData.standHeight = playerMove.standHeight;
 
-        Debug.Log("플레이어 상태 저장 완료");
+        // Debug.Log("플레이어 상태 저장 완료");
         SavePlayerDataToFile();
     }
 
