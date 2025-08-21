@@ -48,7 +48,7 @@ public class SceneLoader : MonoBehaviour
     public void LoadSceneAdditive(string sceneName, bool showLoading)
     {
         StartCoroutine(CoLoad(sceneName, showLoading));
-        MapManager.Instance.NewGame();
+        MapManager.NewGame();
     }
 
     IEnumerator CoLoad(string sceneName, bool showLoading)
@@ -114,7 +114,7 @@ public class SceneLoader : MonoBehaviour
     {
         string activeSceneName = SceneManager.GetActiveScene().name;
         StartCoroutine(CoReloadActiveScene(activeSceneName, showLoading));
-        MapManager.Instance.ReGame();
+        MapManager.ReGame();
         UIManager.Instance.CloseDeadUI();
     }
 

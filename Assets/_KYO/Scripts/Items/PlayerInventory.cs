@@ -214,7 +214,12 @@ public class PlayerInventory : MonoBehaviour
         }
 
         DeselectAllSlot();
-        Debug.Log("인벤토리 복원 완료");
+        //Debug.Log("인벤토리 복원 완료");
+    }
+
+    public int GetSelectedIndex()
+    {
+        return selectedIndex;
     }
 
     public int GetSelectedIndex()

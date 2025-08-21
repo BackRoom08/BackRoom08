@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 8678412839814972305}
   - component: {fileID: 8281784252559633565}
   - component: {fileID: 2812083415552559437}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Spot Light
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -219,7 +219,12 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: 45ef1708f3745d3448f8b0f74f4c0763,
         type: 3}
       propertyPath: m_Name
-      value: FlashLight (1)
+      value: P_FlashLight
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 45ef1708f3745d3448f8b0f74f4c0763,
+        type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 45ef1708f3745d3448f8b0f74f4c0763,
         type: 3}
