@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-using static UnityEditor.Progress;
+//using static UnityEditor.Progress;
 
 public class PlayerInventory : MonoBehaviour
 { //빈 게임오브젝트를 인벤토리로 이름 짓고 거기에 붙임

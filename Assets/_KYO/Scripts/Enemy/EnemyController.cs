@@ -23,6 +23,7 @@ public class EnemyController : MonoBehaviour
     
     protected NavMeshAgent agent;      // 이동을 담당하는 NavMeshAgent 컴포넌트
     protected Animator animator;        // 애니메이션 제어용 Animator 컴포넌트
+    protected StateNoiseEmitter noise;      // 사운드 상태 제어용
 
     protected PlayerStatus playerstatus; //ybu 정신력감소를 위해 참조
     protected enum State { Idle,
@@ -40,6 +41,7 @@ public class EnemyController : MonoBehaviour
     {
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponentInChildren<Animator>();
+        noise = GetComponentInChildren<StateNoiseEmitter>();
         //stateTimer = Random.Range(0f, walkDuration);
 
         if (player != null)
@@ -70,6 +72,22 @@ public class EnemyController : MonoBehaviour
             StopCoroutine(stateRoutine);
         
         currState = newState;
+
+                switch (newState) //사운드 제어에 사용할 공간
+        {
+            case State.Idle:
+
+            case State.Wait:
+                noise?.SetState(CharacterMoveState.Idle);
+                break;
+            case State.Walk:
+                noise?.SetState(CharacterMoveState.Walk);
+                break;
+            case State.Chase:
+                noise?.SetState(CharacterMoveState.Chase);
+                break;
+        }
+
         switch (newState)
         {
             case State.Idle:
