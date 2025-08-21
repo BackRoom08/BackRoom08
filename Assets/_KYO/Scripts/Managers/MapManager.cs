@@ -8,93 +8,22 @@ using UnityEngine.SceneManagement;
 
 public class MapManager : MonoBehaviour
 {
-
-    public static MapManager Instance { get; private set; }
-
     [Tooltip("플레이어가 죽을 위치")]
     public Transform playerDeadRoomPoint;
     [Tooltip("적이플레이어를 죽일 위치")]
     public Transform enemyDeadRoomPoints;
 
-    private Volume volume; //페이드인,아웃 효과용
+    public Volume volume; //페이드인,아웃 효과용
     private Vignette vignette;
 
-    private bool isRestarted = false; //게임 리스타트 여부
-
+    // 씬이 바뀌어도 유지되어야 하는 값은 static으로 변경
+    public static bool isRestarted = false;
 
     private void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(this);
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
-    }
-
-    private void OnEnable()
-    {
-        SceneManager.sceneLoaded += OnSceneLoaded;
-    }
-
-    private void OnDisable()
-    {
-        SceneManager.sceneLoaded -= OnSceneLoaded;
-    }
-
-    private void Start()
-    {
-        FindAndAssignDeadRoomPoint();
-        FindGlobalVolume();
-    }
-
-    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        FindAndAssignDeadRoomPoint();
-        FindGlobalVolume();
-
-    }
-
-    void FindAndAssignDeadRoomPoint() //DeadRoom 찾아서 이동포인트 등록(데드씬용)
-    {
-        GameObject deadRoomObject = GameObject.Find("DeadRoom");
         
-        if (deadRoomObject != null)
-        {
-            playerDeadRoomPoint = deadRoomObject.transform.Find("PlayerPoint");
-            enemyDeadRoomPoints = deadRoomObject.transform.Find("EnemyPoint");
-            if (playerDeadRoomPoint == null || enemyDeadRoomPoints == null)
-            {
-                Debug.LogError("DeadRoom포인트 찾지못함");
-            }
-        }
-        else
-        {
-            Debug.LogWarning("DeadRoom 을 씬에 추가해주세요");
-        }
     }
-    void FindGlobalVolume() //GlobalVolume 찾아서 컴포넌트등록 (데드씬용)
-    {
-        GameObject globalvolumeObject = GameObject.Find("Global Volume");
-        if (globalvolumeObject != null)
-        {
-            volume = globalvolumeObject.GetComponent<Volume>();
-            if (volume != null && volume.profile.TryGet(out vignette)) { }
-            else
-            {
-                Debug.LogWarning("MapManager: Volume 또는 Volume Profile에 Vignette가 없습니다.");
-            }
-        }else
-        {
-            Debug.LogWarning("씬에 'Global Volume' 오브젝트가 없습니다.");
-        }
-
-    }
-
-
+        
     /// <summary>
     /// 화면을 검게 만듭니다.
     /// </summary>
@@ -139,15 +68,16 @@ public class MapManager : MonoBehaviour
         vignette.intensity.Override(targetIntensity);
     }
 
-    public bool IsRegame()
+    // static으로 변경하여 어느 스크립트에서든 MapManager.IsRegame() 형태로 호출 가능
+    public static bool IsRegame()
     {
         return isRestarted;
     }
-    public void ReGame()
+    public static void ReGame()
     {
         isRestarted = true;
     }
-    public void NewGame()
+    public static void NewGame()
     {
         isRestarted = false;
     }
