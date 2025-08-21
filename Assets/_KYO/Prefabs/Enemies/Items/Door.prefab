@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6067452617076439260}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Hinge Point
   m_TagString: Untagged
   m_Icon: {fileID: 2488908585195742037, guid: 0000000000000000d000000000000000, type: 0}
@@ -44,7 +44,7 @@ GameObject:
   - component: {fileID: 5276069679348501033}
   - component: {fileID: 3149979856011359593}
   - component: {fileID: 6082578458304554951}
-  m_Layer: 10
+  m_Layer: 9
   m_Name: Door
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -133,7 +133,7 @@ GameObject:
   - component: {fileID: 8182885776476075928}
   - component: {fileID: 3409282897025345239}
   - component: {fileID: 6493586990200858906}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Door
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -215,7 +215,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5048094064401576651}
   - component: {fileID: 4688710471471624100}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Wall_DoorSnapper
   m_TagString: Untagged
   m_Icon: {fileID: 0}

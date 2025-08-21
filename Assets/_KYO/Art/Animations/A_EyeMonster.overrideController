@@ -6,7 +6,7 @@ AnimatorOverrideController:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: New Animator Override Controller
+  m_Name: A_EyeMonster
   m_Controller: {fileID: 9100000, guid: 0e674e6a718a78d4f8c1410cb3394f7c, type: 2}
   m_Clips:
   - m_OriginalClip: {fileID: 6782595489454084048, guid: c3d73ba06daaeef40b556c623d33fc02,

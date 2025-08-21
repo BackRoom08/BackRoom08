@@ -15,6 +15,7 @@ public class PlayerStatus : MonoBehaviour
     public Animator anim;
     public Text MentalText;
     private bool isMentalDamageActive = false; // 정신력 감소 활성화 여부
+    private Transform playerDeadRoomPoint; //죽는 장소
 
     void Awake()
     {
@@ -24,6 +25,10 @@ public class PlayerStatus : MonoBehaviour
             return;
         }
         MentalText = textObj.GetComponent<Text>();
+
+        // 데드룸 위치 설정
+        playerDeadRoomPoint = MapManager.Instance.playerDeadRoomPoint;
+
     }
 
     void Start()
@@ -33,10 +38,10 @@ public class PlayerStatus : MonoBehaviour
         StartCoroutine(DecreaseMentalHP()); //코루틴 시작
     }
 
-    void MentalUI() 
+    void MentalUI()
     {
         if (MentalText != null)
-        { 
+        {
             MentalText.text = $"정신력 : {currentMentalHP}";
         }
     }
@@ -47,7 +52,7 @@ public class PlayerStatus : MonoBehaviour
 
         currentMentalHP += amount; //정신력 회복
         currentMentalHP = Mathf.Min(currentMentalHP, MentalHP); //정신력 최대치 제한
-        MentalUI();                                                        
+        MentalUI();
     }
     IEnumerator DecreaseMentalHP()
     {
@@ -58,13 +63,13 @@ public class PlayerStatus : MonoBehaviour
             {
                 currentMentalHP -= MentalDamage; //코루틴 시간마다 정신력 감소
                 currentMentalHP = Mathf.Max(currentMentalHP, 0); //최소값 0으로 제한
+                Debug.Log("현재 정신력 : " + currentMentalHP);
                 MentalUI();
-                //Debug.Log("현재 정신력 : " + currentMentalHP);
 
                 if (currentMentalHP <= 0)
                 {
                     Debug.Log("사망씬 넣어주세요");
-                    // 사망씬 넣어주세요
+                    StartCoroutine(HandleMentalDeath());
                 }
             }
         }
@@ -72,6 +77,32 @@ public class PlayerStatus : MonoBehaviour
     public void SetMentalDamageActive(bool isActive)
     {
         isMentalDamageActive = isActive;
+    }
+    private IEnumerator HandleMentalDeath()
+    {
+        isDead = true;
+
+        // 페이드 아웃
+        MapManager.Instance.FadeOut(0.5f);
+        yield return new WaitForSeconds(0.5f);
+
+        // 플레이어 조작 비활성화
+        GetComponent<PlayerMove>().enabled = false;
+        GetComponent<ItemPickUp>().enabled = false;
+
+        var cameraScript = GetComponentInChildren<NewBehaviourScript>();
+        if (cameraScript != null) cameraScript.enabled = false;
+
+        // 데드룸 위치로 이동
+        transform.position = MapManager.Instance.playerDeadRoomPoint.position;
+
+        // 페이드 인
+        MapManager.Instance.FadeIn(1.5f);
+
+        // 사망 UI 표시
+        UIManager.Instance.ShowDeathUI();
+
+        Debug.Log("정신력 0으로 데드룸 이동 및 게임 오버 처리");
     }
 
 }

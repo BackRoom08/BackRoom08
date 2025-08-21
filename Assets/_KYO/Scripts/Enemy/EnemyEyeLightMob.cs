@@ -7,6 +7,10 @@ public class EnemyEyeLightMob : EnemyController
     [SerializeField] private float chaseDistance = 150f; // 추격 시작 거리
     [SerializeField] private float lostDistance = 151f;  // 플레이어를 놓치는 거리
    
+    [SerializeField] private GameObject hitBoxObject; // 히트박스 오브젝트
+    [SerializeField] private float attackDelay = 0.5f; // 공격 타이밍
+    [SerializeField] private float attackCooldown = 1.5f;
+
     private bool isChasing = false; // 현재 추격 중인지 여부
     private EnemyPlayerAttack enemyAttack; // 공격 스크립트 참조
 
@@ -14,6 +18,7 @@ public class EnemyEyeLightMob : EnemyController
     private bool canBeStunned = true;       // 기절 가능한 상태여부
     private float stunDuration = 2f;        // 기절 지속 시간
     private float stunCooldown = 5f;        // 기절 후 쿨타임
+    private bool isAttacking = false;       // 공격 중 여부
 
 
     // 컴포넌트를 가져오기 위해 Awake를 재정의.
@@ -22,29 +27,43 @@ public class EnemyEyeLightMob : EnemyController
         base.Awake(); // 부모 클래스의 Awake를 호출하여 NavMeshAgent 등을 설정합니다.
         animator = GetComponentInChildren<Animator>(); // 애니메이터를 찾습니다.
         agent.acceleration = 30f; // NavMeshAgent의 가속도를 30으로 설정
-
-        //GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-        //if (playerObj != null)
-        //    player = playerObj.transform;
-
         // 공격 스크립트 컴포넌트를 가져옴
         enemyAttack = GetComponent<EnemyPlayerAttack>();
+
+        if (hitBoxObject != null)
+        {
+            hitBoxObject.SetActive(false); // 시작 시 비활성화
+        }
+
     }
 
 
     protected override void Update()
     {
         if (player == null || isStunned) return;
-
         base.Update();
-    }
-    // 플레이어와 충돌 시 공격 스크립트
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("Player"))
+        if (!isAttacking && Vector3.Distance(transform.position, player.position) < 2f)
         {
-            enemyAttack.InitiateAttack(other.gameObject);
+            StartCoroutine(AttackRoutine());
         }
+
+    }
+
+    private IEnumerator AttackRoutine()
+    {
+        isAttacking = true;
+        agent.isStopped = true;
+
+        animator.SetTrigger("Attack");
+        yield return new WaitForSeconds(attackDelay);
+
+        EnableHitBox();
+        yield return new WaitForSeconds(0.3f);
+        DisableHitBox();
+
+        yield return new WaitForSeconds(attackCooldown);
+        agent.isStopped = false;
+        isAttacking = false;
     }
 
     public void OnFlashHit()
@@ -56,14 +75,13 @@ public class EnemyEyeLightMob : EnemyController
         StartCoroutine(StunRoutine());
     }
 
-
     private IEnumerator StunRoutine()
     {
         isStunned = true; //기절상태가 되고
         canBeStunned = false; //기절면역상태가 됨
 
         agent.isStopped = true; //멈춤
-       // animator.SetFloat("Speed", 0);
+        animator.SetFloat("Speed", 0);
        // animator.SetTrigger("Stun");
 
         yield return new WaitForSeconds(stunDuration);
@@ -100,4 +118,20 @@ public class EnemyEyeLightMob : EnemyController
     {
         return !isStunned;
     }
+
+   
+    //히트박스 활성화
+    private void EnableHitBox()
+    {
+        if (hitBoxObject != null)
+            hitBoxObject.SetActive(true);
+    }
+
+    private void DisableHitBox()
+    {
+        if (hitBoxObject != null)
+            hitBoxObject.SetActive(false);
+    }
+
+
 }

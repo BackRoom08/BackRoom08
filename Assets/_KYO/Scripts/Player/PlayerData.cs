@@ -42,7 +42,8 @@ public class PlayerData
     public bool isFlashlightOn; // on/off 여부
 
     // 인벤토리 관련
-    public List<ItemSaveData> inventoryItems = new List<ItemSaveData>();
+    public List<ItemSaveData> inventoryItems;
+    public int selectedInventoryIndex = -1;
 
     //// 사운드 관련
     //public CharacterMoveState currentSoundState; //플레이어 움직임상태

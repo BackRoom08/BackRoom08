@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -11,6 +12,10 @@ public class SceneLoader : MonoBehaviour
 
     [SerializeField] private bool autoLoadOnStart = true;
     [SerializeField] private string firstSceneToLoad = "StartScene";
+
+    public Action<string> OnSceneLoaded;
+    // 씬 로딩 완료 시 호출ybu
+
 
     void Awake()
     {
@@ -43,7 +48,7 @@ public class SceneLoader : MonoBehaviour
     public void LoadSceneAdditive(string sceneName, bool showLoading)
     {
         StartCoroutine(CoLoad(sceneName, showLoading));
-        MapManager.Instance.NewGame();
+        MapManager.NewGame();
     }
 
     IEnumerator CoLoad(string sceneName, bool showLoading)
@@ -99,6 +104,9 @@ public class SceneLoader : MonoBehaviour
         //print("loaded");
 
         // (옵션) 로딩 종료 후 커서/타임스케일은 UIManager가 관리
+        OnSceneLoaded?.Invoke(sceneName);
+        //씬 로딩 완료 콜백 호출 ybu
+
     }
 
     // 씬 다시 로드 (리게임)
@@ -106,7 +114,7 @@ public class SceneLoader : MonoBehaviour
     {
         string activeSceneName = SceneManager.GetActiveScene().name;
         StartCoroutine(CoReloadActiveScene(activeSceneName, showLoading));
-        MapManager.Instance.ReGame();
+        MapManager.ReGame();
         UIManager.Instance.CloseDeadUI();
     }
 
@@ -151,6 +159,9 @@ public class SceneLoader : MonoBehaviour
             UIManager.Instance.SetLoadingProgress(1f);
             UIManager.Instance.ShowLoading(false);
         }
+        OnSceneLoaded?.Invoke(sceneName);
+        // 다시 로드된 씬 콜백 호출 ybu
+
     }
     private void Update()
     {
