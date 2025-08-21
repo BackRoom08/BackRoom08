@@ -626,6 +626,9 @@ MonoBehaviour:
   cam: {fileID: 0}
   pickUpRange: 5
   inventory: {fileID: 0}
+  interactableLayer:
+    serializedVersion: 2
+    m_Bits: 512
 --- !u!143 &8624411087664277818
 CharacterController:
   m_ObjectHideFlags: 0
@@ -671,7 +674,7 @@ MonoBehaviour:
   flashRange: 15
   enemyLayer:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 128
 --- !u!114 &3316003904081101240
 MonoBehaviour:
   m_ObjectHideFlags: 0
