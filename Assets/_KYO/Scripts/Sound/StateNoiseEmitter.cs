@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -10,7 +10,9 @@ public enum CharacterMoveState
     Crouch, // 앉기 - 플레이어
     Jump, // 점프 - 플레이어
     Exhaustion,  // 탈진 ( 스테미너 일정 수치 이상 ) - 플레이어
-    Monster// 몬스터 특정 사운드
+    Meet,// 조우
+    Chase,// 플레이어추적중사운드
+
 }
 
 [DisallowMultipleComponent]
@@ -22,6 +24,8 @@ public class StateNoiseEmitter : MonoBehaviour
     [SerializeField, Tooltip("걷는 상태(발소리)")]      private AudioClip walkClip;
     [SerializeField, Tooltip("뛰는 상태(숨소리)")]      private AudioClip breathRunClip;
     [SerializeField, Tooltip("탈진 상태(숨소리)")]      private AudioClip staminaExhaustionClip;
+    [SerializeField, Tooltip("에너미_조우 소리")]      private AudioClip enemyMeetPlayerClip;
+    [SerializeField, Tooltip("에너미_추격 소리")]      private AudioClip enemyChaseClip;
     
     [SerializeField, Range(0f,1f)] private float masterVolume = 0.5f;
     
@@ -107,6 +111,16 @@ public class StateNoiseEmitter : MonoBehaviour
                 PlayLoop(breathSource, staminaExhaustionClip, ref currentClip);
                 isActive = true;
                 currentLoudMul  = exhaustLoudMul;
+                currentRangeMul = breathRangeMul;
+                break;
+            case CharacterMoveState.Meet:
+                
+                break;
+
+            case CharacterMoveState.Chase:
+                PlayLoop(breathSource, enemyChaseClip, ref currentClip);
+                isActive = true;
+                currentLoudMul = exhaustLoudMul;
                 currentRangeMul = breathRangeMul;
                 break;
             
