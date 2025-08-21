@@ -539,6 +539,7 @@ GameObject:
   - component: {fileID: 3316003904081101240}
   - component: {fileID: 4383078829089902972}
   - component: {fileID: 9116168960159936759}
+  - component: {fileID: 7215276333128793004}
   m_Layer: 8
   m_Name: Player
   m_TagString: Player
@@ -675,6 +676,7 @@ MonoBehaviour:
   enemyLayer:
     serializedVersion: 2
     m_Bits: 128
+  flashSound: {fileID: 0}
 --- !u!114 &3316003904081101240
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -691,7 +693,9 @@ MonoBehaviour:
   MentalInterval: 2
   MentalDamage: 1
   anim: {fileID: 3123306261390885668}
+  audioSource: {fileID: 0}
   MentalText: {fileID: 0}
+  playerDeadRoomPoint: {fileID: 0}
 --- !u!114 &4383078829089902972
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -816,6 +820,24 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &7215276333128793004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1405059874409016380}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4cbaf9a401734b4eb7867e6c225bee2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  godModeRadius: 10
+  pushForce: 10
+  enemyLayer:
+    serializedVersion: 2
+    m_Bits: 128
+  enemyTag: Enemy
 --- !u!1 &1495783716570254288
 GameObject:
   m_ObjectHideFlags: 0

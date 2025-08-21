@@ -13,6 +13,8 @@ public class PlayerStatus : MonoBehaviour
     private bool isDead = false;
     private int currentMentalHP;
     public Animator anim;
+    public AudioSource audioSource;
+
     public Text MentalText;
     private bool isMentalDamageActive = false; // 정신력 감소 활성화 여부
     public Transform playerDeadRoomPoint; //죽는 장소
@@ -41,6 +43,23 @@ public class PlayerStatus : MonoBehaviour
     {
         //anim = GetComponent<Animator>();
         currentMentalHP = MentalHP;
+
+        // Animator가 인스펙터에서 연결되지 않았다면 자동으로 가져오기
+        if (anim == null)
+        {
+            anim = GetComponent<Animator>();
+        }
+
+        // AudioSource 자동 연결
+        if (audioSource == null)
+        {
+            audioSource = GetComponent<AudioSource>();
+            if (audioSource == null)
+            {
+                audioSource = gameObject.AddComponent<AudioSource>();
+            }
+        }
+
         StartCoroutine(DecreaseMentalHP()); //코루틴 시작
     }
 
