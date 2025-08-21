@@ -6,6 +6,7 @@ using UnityEngine;
 public class StaminaPotion : ItemDatas
 {
     public int HealStaminaRate = 100;
+    public AudioClip drinkSound;
     private bool isDrink = false;
     public void Use(PlayerMove playermove) 
     {
@@ -13,6 +14,11 @@ public class StaminaPotion : ItemDatas
         {
             playermove.HealStamina(HealStaminaRate);
             playermove.anim.SetBool("Drink", true);
+            AudioSource audioSource = playermove.GetComponent<AudioSource>();
+            if (audioSource != null && drinkSound != null)
+            {
+                audioSource.PlayOneShot(drinkSound); //벌컥
+            }
             playermove.StartCoroutine(ResetDrink(playermove.anim));
         }
     }
