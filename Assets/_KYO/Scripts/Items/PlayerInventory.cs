@@ -222,4 +222,9 @@ public class PlayerInventory : MonoBehaviour
         return selectedIndex;
     }
 
+    public int GetSelectedIndex()
+    {
+        return selectedIndex;
+    }
+
 }

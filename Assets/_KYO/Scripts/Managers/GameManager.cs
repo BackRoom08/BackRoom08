@@ -170,7 +170,7 @@ public class GameManager : MonoBehaviour
                 loadedInventory.Add(matchedItem);
             }
         }
-        //Debug.Log("인벤토리 로드 완료!");
+        Debug.Log("인벤토리 로드 완료!");
         return loadedInventory;
     }
 
