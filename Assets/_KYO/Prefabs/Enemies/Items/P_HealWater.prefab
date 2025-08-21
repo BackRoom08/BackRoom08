@@ -10,7 +10,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 100000, guid: dd5aa0c3f535aae42855c3dc00bf33d0, type: 3}
       propertyPath: m_Name
-      value: HealWater
+      value: P_HealWater
+      objectReference: {fileID: 0}
+    - target: {fileID: 100000, guid: dd5aa0c3f535aae42855c3dc00bf33d0, type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 100000, guid: dd5aa0c3f535aae42855c3dc00bf33d0, type: 3}
       propertyPath: m_TagString

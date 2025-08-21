@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 3913863852818500121}
   - component: {fileID: 8851755899373122890}
   - component: {fileID: 5193635991025622621}
+  - component: {fileID: 58341088157918936}
   m_Layer: 9
   m_Name: locker
   m_TagString: Untagged
@@ -157,6 +158,27 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   data: {fileID: 11400000, guid: 25744a8994893ab4a8ba4732ebcdcd79, type: 2}
+--- !u!65 &58341088157918936
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 243709991558611238}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.76, y: 1.77, z: 0.1}
+  m_Center: {x: 0, y: 0.9176729, z: 0.39}
 --- !u!1 &3803801157584435645
 GameObject:
   m_ObjectHideFlags: 0
@@ -169,7 +191,7 @@ GameObject:
   - component: {fileID: 3729822469210439122}
   - component: {fileID: 3038059777020347349}
   - component: {fileID: 8303415230895274992}
-  m_Layer: 9
+  m_Layer: 0
   m_Name: door
   m_TagString: Untagged
   m_Icon: {fileID: 0}

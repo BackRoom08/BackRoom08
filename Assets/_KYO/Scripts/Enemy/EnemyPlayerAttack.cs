@@ -60,8 +60,15 @@ public class EnemyPlayerAttack : MonoBehaviour
 
     private IEnumerator AttackCoroutine(GameObject playerObject)
     {
+        MapManager mapManager = FindObjectOfType<MapManager>();
+        if (mapManager == null)
+        {
+            Debug.LogError("Scene에 MapManager가 없습니다!");
+            yield break; // MapManager가 없으면 코루틴 중단
+        }
+
         // 페이드 아웃
-        MapManager.Instance.FadeOut(0.1f);
+        mapManager.FadeOut(0.1f);
         yield return new WaitForSeconds(0.1f);
 
         // 플레이어 조작 비활성화
@@ -76,8 +83,8 @@ public class EnemyPlayerAttack : MonoBehaviour
         if (mainAiScript != null) mainAiScript.enabled = false;
 
         // 데스룸으로 순간이동 , 페이드 인
-        transform.position = MapManager.Instance.enemyDeadRoomPoints.position;
-        playerObject.transform.position = MapManager.Instance.playerDeadRoomPoint.position;
+        transform.position = mapManager.enemyDeadRoomPoints.position;
+        playerObject.transform.position = mapManager.playerDeadRoomPoint.position;
 
         transform.LookAt(playerObject.transform);
         // 플레이어가 적을 수평으로만 바라보도록 수정
@@ -88,7 +95,7 @@ public class EnemyPlayerAttack : MonoBehaviour
             playerObject.transform.rotation = Quaternion.LookRotation(directionToEnemy);
         }
 
-        MapManager.Instance.FadeIn(1.5f);
+        mapManager.FadeIn(1.5f);
 
         // 애니메이션 실행
         yield return new WaitForSeconds(2f);
