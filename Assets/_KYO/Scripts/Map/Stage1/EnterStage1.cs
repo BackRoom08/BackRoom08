@@ -15,7 +15,7 @@ public class EnterStage1 : MonoBehaviour, IInteractable
     {
         if (!MapManager.Instance.IsRegame())
         {
-            print(MapManager.Instance.IsRegame());
+            //print(MapManager.Instance.IsRegame());
             gameObject.SetActive(false);
         }
     }

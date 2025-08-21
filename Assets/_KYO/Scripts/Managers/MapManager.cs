@@ -24,13 +24,16 @@ public class MapManager : MonoBehaviour
 
     private void Awake()
     {
+        Debug.Log($"Awake() called on MapManager instance ID: {GetInstanceID()}", gameObject);
         if (Instance == null)
-        {
+        {            
             Instance = this;
-            DontDestroyOnLoad(this);
+            DontDestroyOnLoad(gameObject);
+            Debug.Log($"MapManager singleton instance created: {GetInstanceID()}", gameObject);
         }
-        else
+        else if (Instance != this)
         {
+            Debug.LogWarning($"Duplicate MapManager (ID: {GetInstanceID()}) found. Original is {Instance.GetInstanceID()}. Destroying duplicate.", gameObject);
             Destroy(gameObject);
         }
     }
@@ -53,21 +56,60 @@ public class MapManager : MonoBehaviour
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        StartCoroutine(DelayedSceneSetup());
+    }
+
+    private IEnumerator DelayedSceneSetup()
+    {
+        // 씬의 모든 오브젝트가 초기화되도록 한 프레임 기다립니다.
+        yield return new WaitForEndOfFrame();
+
         FindAndAssignDeadRoomPoint();
         FindGlobalVolume();
-
     }
 
     void FindAndAssignDeadRoomPoint() //DeadRoom 찾아서 이동포인트 등록(데드씬용)
     {
+        Debug.Log("FindAndAssignDeadRoomPoint: 탐색 시작...");
         GameObject deadRoomObject = GameObject.Find("DeadRoom");
         if (deadRoomObject != null)
         {
-            playerDeadRoomPoint = deadRoomObject.transform.Find("PlayerPoint");
-            enemyDeadRoomPoints = deadRoomObject.transform.Find("EnemyPoint");
+            Debug.Log($"FindAndAssignDeadRoomPoint: 'DeadRoom' 오브젝트를 찾았습니다. 이름: {deadRoomObject.name}, 인스턴스 ID: {deadRoomObject.GetInstanceID()}, 활성 상태: {deadRoomObject.activeInHierarchy}");
+
+            Transform playerPointTransform = deadRoomObject.transform.Find("PlayerPoint");
+            if (playerPointTransform != null)
+            {
+                Debug.Log($"FindAndAssignDeadRoomPoint: 'PlayerPoint' 자식을 찾았습니다. 활성 상태: {playerPointTransform.gameObject.activeInHierarchy}");
+                playerDeadRoomPoint = playerPointTransform;
+            }
+            else
+            {
+                Debug.LogError("FindAndAssignDeadRoomPoint: 'DeadRoom'의 자식 'PlayerPoint'를 찾지 못했습니다. 'DeadRoom'의 자식 오브젝트들을 확인해주세요.");
+                // For further debugging, let's list all children
+                foreach (Transform child in deadRoomObject.transform)
+                {
+                    Debug.LogWarning($"'DeadRoom'의 자식: {child.name}, 활성 상태: {child.gameObject.activeSelf}");
+                }
+            }
+
+            Transform enemyPointTransform = deadRoomObject.transform.Find("EnemyPoint");
+            if (enemyPointTransform != null)
+            {
+                Debug.Log($"FindAndAssignDeadRoomPoint: 'EnemyPoint' 자식을 찾았습니다. 활성 상태: {enemyPointTransform.gameObject.activeInHierarchy}");
+                enemyDeadRoomPoints = enemyPointTransform;
+            }
+            else
+            {
+                Debug.LogError("FindAndAssignDeadRoomPoint: 'DeadRoom'의 자식 'EnemyPoint'를 찾지 못했습니다.");
+            }
+
             if (playerDeadRoomPoint == null || enemyDeadRoomPoints == null)
             {
-                Debug.LogError("DeadRoom포인트 찾지못함");
+                Debug.LogError("DeadRoom포인트 최종 할당 실패.");
+            }
+            else
+            {
+                Debug.Log("DeadRoom포인트 최종 할당 성공!");
             }
         }
         else
@@ -86,7 +128,8 @@ public class MapManager : MonoBehaviour
             {
                 Debug.LogWarning("MapManager: Volume 또는 Volume Profile에 Vignette가 없습니다.");
             }
-        }else
+        }
+        else
         {
             Debug.LogWarning("씬에 'Global Volume' 오브젝트가 없습니다.");
         }

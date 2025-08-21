@@ -23,7 +23,8 @@ public class EnemyController : MonoBehaviour
     
     protected NavMeshAgent agent;      // 이동을 담당하는 NavMeshAgent 컴포넌트
     protected Animator animator;        // 애니메이션 제어용 Animator 컴포넌트
-    
+
+    protected PlayerStatus playerstatus; //ybu 정신력감소를 위해 참조
     protected enum State { Idle,
         Walk,
         Chase,
@@ -40,6 +41,12 @@ public class EnemyController : MonoBehaviour
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponentInChildren<Animator>();
         //stateTimer = Random.Range(0f, walkDuration);
+
+        if (player != null)
+        {
+            playerstatus = player.GetComponent<PlayerStatus>();
+        }//ybu 플레이어 정신력 스크립트 찾아서 초기화
+
         agent.isStopped = true;
         
         // 방향 회전 속도
@@ -91,6 +98,7 @@ public class EnemyController : MonoBehaviour
         animator.SetFloat("Speed", 0);
         yield return new WaitForSeconds(idleDuration);
         ChangeState(State.Walk);
+
     }
 
     // 배회(걷기) 상태
@@ -132,10 +140,21 @@ public class EnemyController : MonoBehaviour
     {
         agent.isStopped = false;
         agent.speed = runSpeed;
+
+        // 정신력 감소 시작  ybu
+        if (playerstatus != null)
+            playerstatus.SetMentalDamageActive(true);
+
         while (true)
         {
             if (!CanChasePlayer() || Vector3.Distance(transform.position, player.position) > chaseRange * 1.2f)
             {
+                // 정신력 감소 중단 ybu
+                if (playerstatus != null)
+                { 
+                    playerstatus.SetMentalDamageActive(false); 
+                }
+
                 ChangeState(State.Idle);
                 yield break;
             }
@@ -190,6 +209,11 @@ public class EnemyController : MonoBehaviour
 
         // 대기 끝 → 인식 풀고 배회 상태로 전환
         ChangeState(State.Walk);
+       
+        // 정신력 감소 중단 ybu
+        if (playerstatus != null)
+            playerstatus.SetMentalDamageActive(false);
+
     }
 
     // 감지 여부
@@ -234,5 +258,8 @@ public class EnemyController : MonoBehaviour
     
     // 공격할 떄
     // 애니메이션 처리 만들어야함
-    protected virtual void OnAttack() { }
+    protected virtual void OnAttack() 
+    {
+        animator.SetTrigger("Attack");
+    }
 }
