@@ -3313,6 +3313,7 @@ GameObject:
   - component: {fileID: 6926631808702556652}
   - component: {fileID: 23458346516634259}
   - component: {fileID: 707617370398212768}
+  - component: {fileID: 1823174213636668226}
   m_Layer: 7
   m_Name: EyeMonter
   m_TagString: Enemy
@@ -3437,9 +3438,38 @@ MonoBehaviour:
   arriveTimer: 1
   chaseDistance: 50
   lostDistance: 55
-  hitBoxObject: {fileID: 0}
+  hitBoxObject: {fileID: 6714989188396162409}
   attackDelay: 0.5
   attackCooldown: 1.5
+--- !u!114 &1823174213636668226
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4581787312676411812}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 994d02cf67269d745a8187a99c59fa6c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  stepSource: {fileID: 0}
+  breathSource: {fileID: 0}
+  walkClip: {fileID: 0}
+  breathRunClip: {fileID: 0}
+  staminaExhaustionClip: {fileID: 0}
+  enemyMeetPlayerClip: {fileID: 0}
+  enemyChaseClip: {fileID: 0}
+  masterVolume: 0.5
+  baseLoudness: 1
+  baseRange: 12
+  walkLoudMul: 1
+  runBreathLoudMul: 1.2
+  exhaustLoudMul: 1.8
+  breathRangeMul: 0.75
+  currentClip: {fileID: 0}
+  currentState: 0
+  loudEnabled: 0
 --- !u!1 &4603145132315245172
 GameObject:
   m_ObjectHideFlags: 0
