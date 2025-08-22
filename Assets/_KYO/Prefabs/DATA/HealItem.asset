@@ -21,4 +21,4 @@ MonoBehaviour:
   description: "\uC815\uC2E0\uB825\uC744 \uD68C\uBCF5\uC2DC\uCF1C\uC8FC\uB294 \uC2DC\uC6D0\uD55C
     \uBB3C\uBCD1"
   HealMentalHP: 50
-  drinkSound: {fileID: 0}
+  drinkSound: {fileID: 8300000, guid: bb55abda55228204aa0191bc0ae97526, type: 3}

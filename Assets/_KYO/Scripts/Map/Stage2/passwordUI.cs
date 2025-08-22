@@ -82,7 +82,7 @@ public class PasswordUI : MonoBehaviour
                 .FirstOrDefault(go => go.name == pwName); //password의 자식들중에서 해당이름을 가진 오브젝트를 찾음
 
             if (passwordObj == null)
-            {             
+            {
                 allDigitsConnected = false;
                 continue; //못찾으면 실패로 해두고 다음으로 넘어감
             }
@@ -114,24 +114,22 @@ public class PasswordUI : MonoBehaviour
         }
 
         // Player 오브젝트 찾기
-        GameObject playerObj = Resources.FindObjectsOfTypeAll<GameObject>()
-            .FirstOrDefault(go => go.name == "Player"); //Player를 전체에서 검색후 저장
+        yield return new WaitUntil(() => GameObject.Find("Player") != null);
+        //GameObject playerObj = GameObject.Find("Player");
 
-        if (playerObj == null)
-        {
-            yield break;
-        }
+        //Transform lookTransform = playerObj.transform.Find("Look");
+        //if (lookTransform != null)
+        //{
+        //    Transform virtualCamTransform = lookTransform.Find("VirtualCamera");
+        //    if (virtualCamTransform != null)
+        //    {
+        //        cameraControllerObject = virtualCamTransform.gameObject;
+        //        Debug.Log(" VirtualCamera 연결 완료");
+        //    }
+        //}
 
-        GameObject lookObj = playerObj.GetComponentsInChildren<Transform>(true)
-            .Select(t => t.gameObject)
-            .FirstOrDefault(go => go.name == "Look");//- Player의 자식 중 "Look"이라는 이름을 가진 오브젝트를 찾음. 카메라 컨트롤용일 가능성이 높음.
+        isUIInitialized = true;
 
-        if (lookObj == null)
-        {
-            yield break;
-        }
-        cameraControllerObject = lookObj; //오브젝트를 카메라 컨트롤용 변수에 저장.
-        isUIInitialized = true; //UI 초기화가 성공적으로 끝났음을 표시하는 플래그 설정
     }
 
     public void PressNumber(string number)
@@ -167,6 +165,10 @@ public class PasswordUI : MonoBehaviour
             if (enteredPW == correctPW) //정답비교
             {
                 Debug.Log("통과");
+                cameraControllerObject.SetActive(true);
+                passwordUI.SetActive(false);
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
                 // 비활성화된 오브젝트까지 포함해서 전체 Transform에서 찾기
                 Transform[] allTransforms = Resources.FindObjectsOfTypeAll<Transform>();
                 Transform found = allTransforms.FirstOrDefault(t => t.name == "NextMapTrigger");
@@ -180,8 +182,7 @@ public class PasswordUI : MonoBehaviour
             {
                 Debug.Log("오답");
             }
-            ClosePasswordUI();
-            cameraControllerObject.SetActive(true);
+            //ClosePasswordUI();
         }
     }
 
@@ -205,10 +206,20 @@ public class PasswordUI : MonoBehaviour
     }
     public void ClosePasswordUI()
     {
-        currentInput = ""; //ui가 한번 닫혔으므로 초기화
-        UpdateDisplay(); //입력된 숫자도 초기화
         passwordUI.SetActive(false);
-        Cursor.lockState = CursorLockMode.Locked;
+        cameraControllerObject.SetActive(true);
+
+        //  마우스 커서 숨기고 잠금
         Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
+
+        //  시점 제어 스크립트 다시 활성화
+        var lookScript = cameraControllerObject.GetComponent<NewBehaviourScript>();
+        if (lookScript != null)
+            lookScript.enabled = true;
+
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
+
     }
 }

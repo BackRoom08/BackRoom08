@@ -20,9 +20,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_KYO/Scenes/Stage3.unity
     guid: d147e00bfced2a3468537c42e761a2e7
-  - enabled: 1
+  - enabled: 0
     path: Assets/_KYO/Scenes/Stage23.unity
     guid: e9478395c7da3d347a9b9b4bdb505863
+  - enabled: 1
+    path: Assets/_KYO/Scenes/EndingScene.unity
+    guid: 356cdca3b5a6d1f45b9963448fed7850
   m_configObjects:
     com.unity.addressableassets: {fileID: 11400000, guid: 6f68a1d23a2b47c4eb2557b5f5705fe6,
       type: 2}

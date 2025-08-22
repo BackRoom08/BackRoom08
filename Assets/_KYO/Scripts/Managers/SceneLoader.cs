@@ -217,6 +217,7 @@ public class SceneLoader : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.F2)) LoadSceneAdditive("Stage2", true);
             if (Input.GetKeyDown(KeyCode.F3)) LoadSceneAdditive("Stage3", true);
             if (Input.GetKeyDown(KeyCode.F4)) LoadSceneAdditive("Stage4", true);
+            if (Input.GetKeyDown(KeyCode.F5)) LoadSceneAdditive("EndingScene", true);
         }
     }
 }
