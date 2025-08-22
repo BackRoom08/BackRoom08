@@ -67,7 +67,10 @@ public class SettingUI : MonoBehaviour
     }
 
     // 슬라이더 연결
-    public void OnSensChanged(float v){   data.mouseSensitivity = v; }
+    public void OnSensChanged(float v)
+    {
+        data.mouseSensitivity = v;
+    }
 
     static float Linear01ToDb(float v) => (v <= 0.0001f) ? -80f : Mathf.Log10(Mathf.Clamp01(v)) * 20f;
 

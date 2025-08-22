@@ -749,6 +749,16 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 24100000, guid: ace5e0673426f7b409497a5988b7c61b,
         type: 2}
+    - target: {fileID: 5991134235033442977, guid: 894d0a3a355a3e24f889dffdbb612c1f,
+        type: 3}
+      propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 309620419}
+    - target: {fileID: 5991134235033442977, guid: 894d0a3a355a3e24f889dffdbb612c1f,
+        type: 3}
+      propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnSensChanged
+      objectReference: {fileID: 0}
     - target: {fileID: 6290145731733770407, guid: 894d0a3a355a3e24f889dffdbb612c1f,
         type: 3}
       propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.size

@@ -8,7 +8,7 @@ public class GameSetting : ScriptableObject
     [Tooltip("전체 볼륨"), Range(0f, 1f)] public float masterVolume = 1f;
     [Tooltip("배경 음악"), Range(0f, 1f)] public float bgmVolume = 1f;
     [Tooltip("효과음"), Range(0f, 1f)] public float sfxVolume = 1f;
-    [Tooltip("마우스 감도"), Range(0f, 1f)] public float mouseSensitivity = 1f;
+    [Tooltip("마우스 감도"), Range(0f, 2f)] public float mouseSensitivity = 1f;
     [Tooltip("화면 설정")]public string screenMode = "FullScreen";  // 전촤화면, 창모드
     [Tooltip("언어")]public string language = "ko";   // ko, english
     const string K = "SET_";
