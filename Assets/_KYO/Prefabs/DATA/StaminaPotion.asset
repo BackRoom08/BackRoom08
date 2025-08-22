@@ -21,3 +21,4 @@ MonoBehaviour:
   description: "\uB354\uC6B1 \uB354 \uB2EC\uB9B4 \uC218 \uC788\uAC8C \uD574\uC8FC\uB294
     \uC2E0\uBE44\uD55C \uBB3C"
   HealStaminaRate: 50
+  drinkSound: {fileID: 8300000, guid: bb55abda55228204aa0191bc0ae97526, type: 3}
