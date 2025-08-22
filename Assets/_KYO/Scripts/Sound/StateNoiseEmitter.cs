@@ -1,6 +1,8 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Audio;
+using UnityEngine.Serialization;
 
 public enum CharacterMoveState
 {
@@ -14,12 +16,18 @@ public enum CharacterMoveState
     Chase,// 플레이어추적중사운드
 
 }
+public enum SoundState
+{
+    BGM,    // 배경음
+    SFX     // 효과음  
 
+}
 [DisallowMultipleComponent]
 public class StateNoiseEmitter : MonoBehaviour
 {
-    [SerializeField] private AudioSource stepSource;   // 걷기 루프
-    [SerializeField] private AudioSource breathSource; // 호흡 루프
+    [SerializeField, Tooltip("오디오 소스 자동으로 넣어지니 컴포넌트 추가 X")] 
+    private AudioSource audioSource;
+    private AudioMixerGroup mixerGroup;
     
     [SerializeField, Tooltip("걷는 상태(발소리)")]      private AudioClip walkClip;
     [SerializeField, Tooltip("뛰는 상태(숨소리)")]      private AudioClip breathRunClip;
@@ -27,7 +35,7 @@ public class StateNoiseEmitter : MonoBehaviour
     [SerializeField, Tooltip("에너미_조우 소리")]      private AudioClip enemyMeetPlayerClip;
     [SerializeField, Tooltip("에너미_추격 소리")]      private AudioClip enemyChaseClip;
     
-    [SerializeField, Range(0f,1f)] private float masterVolume = 0.5f;
+    [SerializeField, Range(0f,1f)] private float soundVolume = 0.5f;
     
     [SerializeField, Tooltip("인식 세기 베이스")] private float baseLoudness = 1.0f;
     [SerializeField, Tooltip("인식 반경 베이스(미터)")] private float baseRange = 12f;
@@ -43,20 +51,22 @@ public class StateNoiseEmitter : MonoBehaviour
     // 중복 방지
     [SerializeField] AudioClip currentClip;
     [SerializeField] CharacterMoveState currentState = CharacterMoveState.Idle;
+    
+    [Header("사운드 선택 필수")]
+    [SerializeField] SoundState soundState = SoundState.SFX;
 
     [SerializeField, Tooltip("사운드 인식 끄기(사운드 인식이 필요없다면 꼭 false로)")]
     private bool loudEnabled = false;
     
     void Awake()
     {
-        if (!stepSource)   stepSource   = gameObject.AddComponent<AudioSource>();
-        if (!breathSource) breathSource = gameObject.AddComponent<AudioSource>();
-        if (breathSource == stepSource) breathSource = gameObject.AddComponent<AudioSource>();
-
-        foreach (var s in new[]{stepSource, breathSource})
-        {
-            s.loop = true; s.playOnAwake = false; s.pitch = 1f; s.volume = masterVolume;
-        }
+        if(!audioSource) audioSource = gameObject.AddComponent<AudioSource>();
+        audioSource.loop = true; 
+        audioSource.playOnAwake = false; 
+        //audioSource.pitch = 1f;
+        
+        if (mixerGroup != null)
+            audioSource.outputAudioMixerGroup = mixerGroup;
     }
     
     
@@ -81,8 +91,7 @@ public class StateNoiseEmitter : MonoBehaviour
         //print("Current state: " + currentState + " state : " + state);
         currentState = state;
         // 초기화
-        StopLoop(stepSource,   ref currentClip);
-        StopLoop(breathSource, ref currentClip);
+        StopLoop(audioSource, ref currentClip);
         isActive = false;
         
         switch (currentState)
@@ -92,7 +101,7 @@ public class StateNoiseEmitter : MonoBehaviour
                 break;
             case CharacterMoveState.Walk:
                 //print("Walk");
-                PlayLoop(stepSource, walkClip, ref currentClip);
+                PlayLoop(audioSource, walkClip, ref currentClip);
                 isActive = true;
                 currentLoudMul  = walkLoudMul;
                 currentRangeMul = 1f;
@@ -100,7 +109,7 @@ public class StateNoiseEmitter : MonoBehaviour
 
             case CharacterMoveState.Run:
                 //print("Run");
-                PlayLoop(breathSource, breathRunClip, ref currentClip);
+                PlayLoop(audioSource, breathRunClip, ref currentClip);
                 isActive = true;
                 currentLoudMul  = runBreathLoudMul;
                 currentRangeMul = breathRangeMul;
@@ -108,7 +117,7 @@ public class StateNoiseEmitter : MonoBehaviour
 
             case CharacterMoveState.Exhaustion:
                 //print("Exhaustion");
-                PlayLoop(breathSource, staminaExhaustionClip, ref currentClip);
+                PlayLoop(audioSource, staminaExhaustionClip, ref currentClip);
                 isActive = true;
                 currentLoudMul  = exhaustLoudMul;
                 currentRangeMul = breathRangeMul;
@@ -118,7 +127,7 @@ public class StateNoiseEmitter : MonoBehaviour
                 break;
 
             case CharacterMoveState.Chase:
-                PlayLoop(breathSource, enemyChaseClip, ref currentClip);
+                PlayLoop(audioSource, enemyChaseClip, ref currentClip);
                 isActive = true;
                 currentLoudMul = exhaustLoudMul;
                 currentRangeMul = breathRangeMul;
@@ -148,12 +157,6 @@ public class StateNoiseEmitter : MonoBehaviour
     {
         current = null; if (src && src.isPlaying) src.Stop(); if (src) src.clip = null;
     }
-    public void SetMasterVolume(float v)
-    {
-        masterVolume = Mathf.Clamp01(v);
-        if (stepSource) stepSource.volume = masterVolume;
-        if (breathSource) breathSource.volume = masterVolume;
-    }
     
     void EmitNoise(float loudMul, float rangeMul)
     {
@@ -167,4 +170,5 @@ public class StateNoiseEmitter : MonoBehaviour
             Instigator = gameObject
         });
     }
+    
 }

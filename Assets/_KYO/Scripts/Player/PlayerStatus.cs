@@ -23,7 +23,7 @@ public class PlayerStatus : MonoBehaviour
 
     void Awake()
     {
-        GameObject textObj = GameObject.Find("MentalViewUI");
+        GameObject textObj = GameObject.Find("MentalNum");
         if (textObj == null)
         {
             return;
@@ -67,7 +67,7 @@ public class PlayerStatus : MonoBehaviour
     {
         if (MentalText != null)
         {
-            MentalText.text = $"정신력 : {currentMentalHP}";
+            MentalText.text = $"{currentMentalHP}";
         }
     }
 

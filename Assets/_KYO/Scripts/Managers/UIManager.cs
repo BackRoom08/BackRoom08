@@ -233,4 +233,15 @@ public class UIManager : MonoBehaviour
         color.a = 1f;
         deadBgImage.color = color;
     }
+    
+    public void ChangeSound(SoundState soundState, AudioSource audioSource, float soundVolume)
+    {
+        float masterVo = Settings.masterVolume;
+        float bgmVo = Settings.bgmVolume * masterVo;
+        float sfxVo = Settings.sfxVolume * masterVo;
+        if(soundState == SoundState.SFX)
+            audioSource.volume = soundVolume * sfxVo;
+        else if(soundState == SoundState.BGM)
+            audioSource.volume = soundVolume * bgmVo;
+    }
 }
