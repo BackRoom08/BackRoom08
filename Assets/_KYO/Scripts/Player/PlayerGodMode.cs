@@ -5,7 +5,7 @@ public class PlayerGodMode : MonoBehaviour
     public float godModeRadius = 10f;
     public float pushForce = 10f;
     public LayerMask enemyLayer;
-    public string enemyTag = "enemy";
+    public string enemyTag = "Enemy";
 
     private bool isGodModeActive = false;
 

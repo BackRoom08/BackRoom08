@@ -2426,7 +2426,7 @@ MonoBehaviour:
   inventory: {fileID: 0}
   interactableLayer:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 512
 --- !u!143 &4192459514199825514
 CharacterController:
   m_ObjectHideFlags: 0
@@ -2508,9 +2508,11 @@ MonoBehaviour:
   stepSource: {fileID: 5068871651962221483}
   breathSource: {fileID: 5068871651962221483}
   walkClip: {fileID: 8300000, guid: d5c3778edd6f88244a5eff78db0951cb, type: 3}
-  breathRunClip: {fileID: 8300000, guid: dfc5e998b9d24864c88c05254bebb8db, type: 3}
+  breathRunClip: {fileID: 8300000, guid: 76335ba46d0d82746b9138d9bd24b0c9, type: 3}
   staminaExhaustionClip: {fileID: 8300000, guid: ea990ad4fac7d984b8a38eefe8c40f75,
     type: 3}
+  enemyMeetPlayerClip: {fileID: 0}
+  enemyChaseClip: {fileID: 0}
   masterVolume: 0.5
   baseLoudness: 1
   baseRange: 12
