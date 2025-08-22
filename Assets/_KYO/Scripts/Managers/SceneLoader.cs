@@ -198,7 +198,6 @@ public class SceneLoader : MonoBehaviour
 
     private void Update()
     {
-        // 테스트용
         if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
         {
             if (Input.GetKeyDown(KeyCode.F1)) LoadSceneAdditive("Stage1", true);

@@ -5,6 +5,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.Audio;
 
 public class UIManager : MonoBehaviour
 {
@@ -32,6 +33,9 @@ public class UIManager : MonoBehaviour
     // StartScene에서 설정창을 띄울 때 임시로 숨긴 캔버스들 기록
     readonly List<Canvas> hiddenStartCanvases = new List<Canvas>();
 
+    public AudioMixerGroup bgmGroup;
+    public AudioMixerGroup sfxGroup;
+    
     void Awake()
     {
         if (Instance) { Destroy(gameObject); return; }
@@ -232,5 +236,16 @@ public class UIManager : MonoBehaviour
 
         color.a = 1f;
         deadBgImage.color = color;
+    }
+    
+    public void ChangeSound(SoundState soundState, AudioSource audioSource, float soundVolume)
+    {
+        float masterVo = Settings.masterVolume;
+        float bgmVo = Settings.bgmVolume * masterVo;
+        float sfxVo = Settings.sfxVolume * masterVo;
+        if(soundState == SoundState.SFX)
+            audioSource.volume = soundVolume * sfxVo;
+        else if(soundState == SoundState.BGM)
+            audioSource.volume = soundVolume * bgmVo;
     }
 }

@@ -94,6 +94,10 @@ MonoBehaviour:
     m_Localized: 'Stamina : '
     m_Metadata:
       m_Items: []
+  - m_Id: 2867087570161664
+    m_Localized: 'Mental : '
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

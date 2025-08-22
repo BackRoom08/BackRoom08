@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   uid: 1
   type: 0
-  icon: {fileID: 21300000, guid: f24ffe951cc9dc740886f725bd5f12bb, type: 3}
+  icon: {fileID: 21300000, guid: 6dffe64231b551142a0684c9eb995637, type: 3}
   modelPrefab: {fileID: 3899529266989000456, guid: 387d310f92ba5704d893cc1e9a3070f4,
     type: 3}
   itemName: "\uBB3C\uBCD1"
