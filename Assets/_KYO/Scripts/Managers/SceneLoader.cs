@@ -19,6 +19,8 @@ public class SceneLoader : MonoBehaviour
 
     public Action<string> OnSceneLoaded;
 
+    private bool isCheck = true;
+
     void Awake()
     {
         if (Instance) { Destroy(gameObject); return; }
@@ -40,12 +42,16 @@ public class SceneLoader : MonoBehaviour
 
     public void LoadSceneAdditive(string sceneName, bool showLoading)
     {
+        isCheck = false;
         StartCoroutine(CoLoad(sceneName, showLoading));
         MapManager.NewGame();
     }
 
     IEnumerator CoLoad(string sceneName, bool showLoading)
     {
+        Scene existingScene = SceneManager.GetSceneByName(sceneName);
+        bool needToUnloadSameScene = existingScene.IsValid() && existingScene.isLoaded;
+
         if (showLoading && UIManager.Instance)
         {
             UIManager.Instance.ShowLoading(true);
@@ -102,6 +108,12 @@ public class SceneLoader : MonoBehaviour
             var s = SceneManager.GetSceneAt(i);
             if (s.name != sceneName && s.isLoaded && s.name != bootstrapSceneName)
                 yield return SceneManager.UnloadSceneAsync(s);
+
+            // 겹치는 이름의 씬도 추가로 제거
+            if (needToUnloadSameScene && s.name == sceneName && s != loaded)
+            {
+                yield return SceneManager.UnloadSceneAsync(s);
+            }
         }
 
         if (showLoading && UIManager.Instance)
@@ -111,6 +123,7 @@ public class SceneLoader : MonoBehaviour
         }
 
         OnSceneLoaded?.Invoke(sceneName);
+        isCheck = true;
     }
 
     public void ReloadActiveScene(bool showLoading = true)
@@ -198,7 +211,7 @@ public class SceneLoader : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
+        if (Input.GetKey(KeyCode.LeftControl) && isCheck || Input.GetKey(KeyCode.RightControl) && isCheck)
         {
             if (Input.GetKeyDown(KeyCode.F1)) LoadSceneAdditive("Stage1", true);
             if (Input.GetKeyDown(KeyCode.F2)) LoadSceneAdditive("Stage2", true);

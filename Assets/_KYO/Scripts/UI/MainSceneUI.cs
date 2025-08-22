@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,6 +9,7 @@ public class MainScene : MonoBehaviour
     public Button playBtn;
     public Button settingBtn;
     public Button quitBtn;
+    private bool isClick = false;
 
     void Start()
     {
@@ -21,7 +22,9 @@ public class MainScene : MonoBehaviour
     void OnPlayBtnClick()
     {
         //print("play");
-        SceneLoader.Instance.LoadSceneAdditive("Stage1", true);
+        if (!isClick)
+            SceneLoader.Instance.LoadSceneAdditive("Stage1", true);
+        isClick = true;
     }
 
     void OnSettingBtnClick()
