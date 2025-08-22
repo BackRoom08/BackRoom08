@@ -132,6 +132,4 @@ public class EnemyEyeLightMob : EnemyController
         if (hitBoxObject != null)
             hitBoxObject.SetActive(false);
     }
-
-
 }
