@@ -65,6 +65,11 @@ public class StateNoiseEmitter : MonoBehaviour
         audioSource.playOnAwake = false; 
         //audioSource.pitch = 1f;
         
+        if(soundState == SoundState.SFX)
+            mixerGroup = UIManager.Instance.sfxGroup;
+        else if(soundState == SoundState.BGM)
+            mixerGroup = UIManager.Instance.bgmGroup;
+        
         if (mixerGroup != null)
             audioSource.outputAudioMixerGroup = mixerGroup;
     }

@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Audio;
 using UnityEngine.UI;
 
 public class PlayerStatus : MonoBehaviour
@@ -21,6 +22,8 @@ public class PlayerStatus : MonoBehaviour
     public Transform playerDeadRoomPoint; //죽는 장소
 
     MapManager mapManager;
+    
+    private AudioMixerGroup mixerGroup;
 
     void Awake()
     {
@@ -64,6 +67,10 @@ public class PlayerStatus : MonoBehaviour
             {
                 audioSource = gameObject.AddComponent<AudioSource>();
             }
+            
+            mixerGroup = UIManager.Instance.sfxGroup;
+            if (mixerGroup != null)
+                audioSource.outputAudioMixerGroup = mixerGroup;
         }
 
         StartCoroutine(DecreaseMentalHP()); //코루틴 시작
