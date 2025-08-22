@@ -11,10 +11,11 @@ public class PlayerStatus : MonoBehaviour
     public int MentalDamage = 1; //감소데미지
 
     private bool isDead = false;
-    private int currentMentalHP;
+   public int currentMentalHP;
     public Animator anim;
     public AudioSource audioSource;
 
+    public EnemyPlayerAttack enemyAttackScript;
     public Text MentalText;
     private bool isMentalDamageActive = false; // 정신력 감소 활성화 여부
     public Transform playerDeadRoomPoint; //죽는 장소
@@ -35,6 +36,11 @@ public class PlayerStatus : MonoBehaviour
         if (mapManager != null)
         {
             playerDeadRoomPoint = mapManager.playerDeadRoomPoint;
+        }
+
+        if (enemyAttackScript == null)
+        {
+            enemyAttackScript = FindObjectOfType<EnemyPlayerAttack>();
         }
 
     }
@@ -94,7 +100,8 @@ public class PlayerStatus : MonoBehaviour
                 if (currentMentalHP <= 0)
                 {
                     Debug.Log("사망씬 넣어주세요");
-                    StartCoroutine(HandleMentalDeath());
+                    enemyAttackScript.InitiateAttack(gameObject);
+                    
                 }
             }
         }
@@ -119,7 +126,7 @@ public class PlayerStatus : MonoBehaviour
         if (cameraScript != null) cameraScript.enabled = false;
 
         // 데드룸 위치로 이동
-        transform.position = playerDeadRoomPoint.position;
+        transform.position = mapManager.playerDeadRoomPoint.position;
         
 
         // 페이드 인
