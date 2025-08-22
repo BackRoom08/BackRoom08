@@ -59,33 +59,33 @@ public class PasswordClearMap : MonoBehaviour
     }
 
     void Update()
-        {
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            RaycastHit hit; //레이를 쏘고 정보를 변수에 담음
+    {
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        RaycastHit hit; //레이를 쏘고 정보를 변수에 담음
 
-            if (Physics.Raycast(ray, out hit, interactDistance, interactLayer))
-            { //오브젝트에 닿았나 확인
-                if (hit.collider.CompareTag("computerPassword"))
-                { //태그 확인
-                    if (!isOnMouse && !isEkeydown)
-                    {//마우스가 오브젝트에 올라왔으면
-                        interactText.SetActive(true);
-                        isOnMouse = true;
-                    }//안내텍스트 보여줌
+        if (Physics.Raycast(ray, out hit, interactDistance, interactLayer))
+        { //오브젝트에 닿았나 확인
+            if (hit.collider.CompareTag("computerPassword"))
+            { //태그 확인
+                if (!isOnMouse && !isEkeydown)
+                {//마우스가 오브젝트에 올라왔으면
+                    interactText.SetActive(true);
+                    isOnMouse = true;
+                }//안내텍스트 보여줌
 
-                    if (Input.GetKeyDown(KeyCode.E))
-                    {
-                        isEkeydown = true;
-                        cameraControllerObject.SetActive(false);
-                        passwordUI.SetActive(true);
-                        Cursor.lockState = CursorLockMode.None;
-                        Cursor.visible = true;
-                        //UI를 띄우고 시점을 고정하고 커서를 보이게 함
-                        HideText();
-                    }
-                }
-                else
+                if (Input.GetKeyDown(KeyCode.E))
                 {
+                    isEkeydown = true;
+                    cameraControllerObject.SetActive(false);
+                    passwordUI.SetActive(true);
+                    Cursor.lockState = CursorLockMode.None;
+                    Cursor.visible = true;
+                    //UI를 띄우고 시점을 고정하고 커서를 보이게 함
+
+                    var lookScript = cameraControllerObject.GetComponent<NewBehaviourScript>();
+                    if (lookScript != null)
+                        lookScript.enabled = false;
+
                     HideText();
                 }
             }
@@ -93,27 +93,40 @@ public class PasswordClearMap : MonoBehaviour
             {
                 HideText();
             }
-
-            if (Input.GetKeyDown(KeyCode.Escape))
-            {
-                ClosePasswordUI();
-            }
         }
-    
-    public void ClosePasswordUI()
-    {
-        passwordUI.SetActive(false);            //UI비활성화
-        Cursor.lockState = CursorLockMode.Locked; //커서 숨기고 잠금
-        Cursor.visible = false;
+        else
+        {
+            HideText();
+        }
 
-        cameraControllerObject.SetActive(true); // 시점 제어 다시 활성화
-        isEkeydown = false;
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            ClosePasswordUI();
+        }
     }
 
-    void HideText() 
+    public void ClosePasswordUI()
+    {
+        passwordUI.SetActive(false);
+        cameraControllerObject.SetActive(true);
+
+        //  마우스 커서 숨기고 잠금
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
+
+        //  시점 제어 스크립트 다시 활성화
+        var lookScript = cameraControllerObject.GetComponent<NewBehaviourScript>();
+        if (lookScript != null)
+            lookScript.enabled = true;
+
+        isEkeydown = false;
+
+    }
+
+    void HideText()
     {
         if (isOnMouse)
-        {      
+        {
             interactText.SetActive(false);
             isOnMouse = false;
         }
