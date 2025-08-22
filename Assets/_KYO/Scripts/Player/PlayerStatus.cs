@@ -120,6 +120,7 @@ public class PlayerStatus : MonoBehaviour
 
         // 데드룸 위치로 이동
         transform.position = playerDeadRoomPoint.position;
+        //테스트
 
         // 페이드 인
         mapManager.FadeIn(1.5f);
