@@ -3456,14 +3456,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 994d02cf67269d745a8187a99c59fa6c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  stepSource: {fileID: 0}
-  breathSource: {fileID: 0}
+  audioSource: {fileID: 0}
   walkClip: {fileID: 0}
   breathRunClip: {fileID: 0}
   staminaExhaustionClip: {fileID: 0}
   enemyMeetPlayerClip: {fileID: 0}
-  enemyChaseClip: {fileID: 0}
-  masterVolume: 0.5
+  enemyChaseClip: {fileID: 8300000, guid: 583e9023e30ee284abc2d5ebca74a545, type: 3}
+  soundVolume: 0.5
   baseLoudness: 1
   baseRange: 12
   walkLoudMul: 1
@@ -3472,6 +3471,7 @@ MonoBehaviour:
   breathRangeMul: 0.75
   currentClip: {fileID: 0}
   currentState: 0
+  soundState: 1
   loudEnabled: 0
 --- !u!114 &6998700905072385834
 MonoBehaviour:
