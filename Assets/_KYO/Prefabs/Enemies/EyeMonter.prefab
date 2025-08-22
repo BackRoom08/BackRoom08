@@ -981,7 +981,7 @@ Transform:
   m_GameObject: {fileID: 1408059725271647551}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0, y: -0.897, z: 0}
+  m_LocalPosition: {x: -0, y: -1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -3132,7 +3132,7 @@ Transform:
   m_GameObject: {fileID: 4397510992488796023}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0, y: 1.2871122, z: -0.48973677}
+  m_LocalPosition: {x: -0, y: 0, z: 0}
   m_LocalScale: {x: 21.787596, y: 21.787596, z: 21.787596}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -3314,6 +3314,7 @@ GameObject:
   - component: {fileID: 23458346516634259}
   - component: {fileID: 707617370398212768}
   - component: {fileID: 1823174213636668226}
+  - component: {fileID: 6998700905072385834}
   m_Layer: 7
   m_Name: EyeMonter
   m_TagString: Enemy
@@ -3371,10 +3372,10 @@ CharacterController:
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 128
   m_ExcludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 128
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
@@ -3441,6 +3442,8 @@ MonoBehaviour:
   hitBoxObject: {fileID: 6714989188396162409}
   attackDelay: 0.5
   attackCooldown: 1.5
+  attackAnimationDuration: 2
+  attackTriggerName: Attack
 --- !u!114 &1823174213636668226
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3470,6 +3473,21 @@ MonoBehaviour:
   currentClip: {fileID: 0}
   currentState: 0
   loudEnabled: 0
+--- !u!114 &6998700905072385834
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4581787312676411812}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80d045b6723be7e4496a2459e4375e4d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  attackAnimationDuration: 2
+  attackTriggerName: Attack
+  gameOverSceneName: 
 --- !u!1 &4603145132315245172
 GameObject:
   m_ObjectHideFlags: 0
@@ -5192,7 +5210,7 @@ Transform:
   m_GameObject: {fileID: 6714989188396162409}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.228, z: 0.483}
+  m_LocalPosition: {x: 0, y: 0, z: 0.8}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5217,7 +5235,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
+  m_Size: {x: 1, y: 2, z: 2}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &4606623906482536170
 MonoBehaviour:

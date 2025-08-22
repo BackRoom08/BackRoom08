@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class EnemyEyeLightMob : EnemyController
 {
@@ -11,6 +12,11 @@ public class EnemyEyeLightMob : EnemyController
     [SerializeField] private float attackDelay = 0.5f; // 공격 타이밍
     [SerializeField] private float attackCooldown = 1.5f;
 
+    [Tooltip("공격 애니메이션 재생 후 게임오버까지 대기하는 시간")]
+    public float attackAnimationDuration = 2f;
+    [Tooltip("실행할 공격 애니메이션의 트리거 이름")]
+    public string attackTriggerName = "Attack";
+
     private bool isChasing = false; // 현재 추격 중인지 여부
     private EnemyPlayerAttack enemyAttack; // 공격 스크립트 참조
 
@@ -18,14 +24,15 @@ public class EnemyEyeLightMob : EnemyController
     private bool canBeStunned = true;       // 기절 가능한 상태여부
     private float stunDuration = 2f;        // 기절 지속 시간
     private float stunCooldown = 5f;        // 기절 후 쿨타임
-    private bool isAttacking = false;       // 공격 중 여부
-
+    private bool isAttacking = false;
+                
+    private MonoBehaviour mainAiScript;     // 적의 주 AI 스크립트
 
     // 컴포넌트를 가져오기 위해 Awake를 재정의.
     protected override void Awake()
     {
-        base.Awake(); // 부모 클래스의 Awake를 호출하여 NavMeshAgent 등을 설정합니다.
-        animator = GetComponentInChildren<Animator>(); // 애니메이터를 찾습니다.
+        base.Awake(); // 부모 클래스의 Awake를 호출하여 NavMeshAgent 등을 설정합니다.   
+        animator = GetComponentInChildren<Animator>();
         agent.acceleration = 30f; // NavMeshAgent의 가속도를 30으로 설정
         // 공격 스크립트 컴포넌트를 가져옴
         enemyAttack = GetComponent<EnemyPlayerAttack>();
@@ -35,8 +42,16 @@ public class EnemyEyeLightMob : EnemyController
             hitBoxObject.SetActive(false); // 시작 시 비활성화
         }
 
+        // 이 스크립트를 제외한 다른 MonoBehaviour를 찾아서 AI 스크립트로 간주
+        foreach (var script in GetComponents<MonoBehaviour>())
+        {
+            if (script != this)
+            {
+                mainAiScript = script;
+                break;
+            }
+        }
     }
-
 
     protected override void Update()
     {
@@ -46,7 +61,6 @@ public class EnemyEyeLightMob : EnemyController
         {
             StartCoroutine(AttackRoutine());
         }
-
     }
 
     private IEnumerator AttackRoutine()
@@ -62,7 +76,11 @@ public class EnemyEyeLightMob : EnemyController
         DisableHitBox();
 
         yield return new WaitForSeconds(attackCooldown);
+
+        agent.enabled = true;
+        yield return null; // 한 프레임 대기
         agent.isStopped = false;
+
         isAttacking = false;
     }
 
@@ -131,5 +149,63 @@ public class EnemyEyeLightMob : EnemyController
     {
         if (hitBoxObject != null)
             hitBoxObject.SetActive(false);
+    }
+
+    public void InitiateAttack(GameObject playerObject)
+    {
+        // AI 스크립트가 활성화 상태일 때만 실행
+        if (mainAiScript != null && mainAiScript.enabled)
+        {
+            StartCoroutine(AttackCoroutine(playerObject));
+        }
+    }
+    private IEnumerator AttackCoroutine(GameObject playerObject)
+    {
+        MapManager mapManager = FindObjectOfType<MapManager>();
+        if (mapManager == null)
+        {
+            Debug.LogError("Scene에 MapManager가 없습니다!");
+            yield break; // MapManager가 없으면 코루틴 중단
+        }
+
+        // 페이드 아웃
+        mapManager.FadeOut(0.1f);
+        yield return new WaitForSeconds(0.1f);
+
+        // 플레이어 조작 비활성화
+        playerObject.GetComponent<PlayerMove>().enabled = false;
+        playerObject.GetComponent<ItemPickUp>().enabled = false;
+
+        var cameraScript = playerObject.GetComponentInChildren<NewBehaviourScript>();
+        if (cameraScript != null) cameraScript.enabled = false;
+
+        // AI 비활성화
+        agent.enabled = false;
+        if (mainAiScript != null) mainAiScript.enabled = false;
+
+        // 데스룸으로 순간이동 , 페이드 인
+        transform.position = mapManager.enemyDeadRoomPoints.position;
+        playerObject.transform.position = mapManager.playerDeadRoomPoint.position;
+
+        transform.LookAt(playerObject.transform);
+        // 플레이어가 적을 수평으로만 바라보도록 수정
+        Vector3 directionToEnemy = transform.position - playerObject.transform.position;
+        directionToEnemy.y = 0; // Y축 값을 0으로 만들어 수평 방향으로 고정
+        if (directionToEnemy != Vector3.zero) // 0 벡터가 아닐 때만 회전 적용 (오류 방지)
+        {
+            playerObject.transform.rotation = Quaternion.LookRotation(directionToEnemy);
+        }
+
+        mapManager.FadeIn(1.5f);
+
+        // 애니메이션 실행
+        yield return new WaitForSeconds(2f);
+        animator.SetTrigger(attackTriggerName);
+
+        //  애니메이션 시간만큼 대기
+        yield return new WaitForSeconds(attackAnimationDuration);
+
+        UIManager.Instance.ShowDeathUI();
+        Debug.Log("게임 오버 부분 붙여서 넣기 !");
     }
 }
