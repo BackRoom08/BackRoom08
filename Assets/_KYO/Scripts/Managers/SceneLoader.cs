@@ -7,15 +7,17 @@ public class SceneLoader : MonoBehaviour
 {
     public static SceneLoader Instance { get; private set; }
 
-    [SerializeField] private string bootstrapSceneName = "SampleScene"; // 전역 시스템 담긴 씬(선택)
-    [SerializeField] private float minLoadingTime = 2f; // 로딩화면 최소 노출
-
+    [SerializeField] private string bootstrapSceneName = "SampleScene";
+    [SerializeField] private float minLoadingTime = 2f;      // 로딩 최소 노출
     [SerializeField] private bool autoLoadOnStart = true;
     [SerializeField] private string firstSceneToLoad = "StartScene";
 
-    public Action<string> OnSceneLoaded;
-    // 씬 로딩 완료 시 호출ybu
+    [Header("Progress Tuning")]
+    [SerializeField] [Range(0.1f, 0.9f)]
+    private float asyncPortion = 0.30f;                      // 실제 비동기 로딩이 차지할 게이지 비율 (예: 30%)
+    [SerializeField] private float smoothFillDuration = 2.5f;// 나머지 70%를 채우는 연출 시간(초)
 
+    public Action<string> OnSceneLoaded;
 
     void Awake()
     {
@@ -30,21 +32,12 @@ public class SceneLoader : MonoBehaviour
             StartCoroutine(AutoKickoff());
     }
 
-
     IEnumerator AutoKickoff()
     {
         yield return null;
-        //LoadSceneAdditive(firstSceneToLoad);
         LoadSceneAdditive(firstSceneToLoad, false);
     }
 
-    // 씬 전환 사용
-    // 아래 그대로 호출 씬이름만 넣어서
-    // SceneLoader.Instance.LoadSceneAdditive("본인 씬", true);
-    // 예시
-    // SceneLoader.Instance.LoadSceneAdditive("Stage1", true);
-
-    // 씬 전환 로더
     public void LoadSceneAdditive(string sceneName, bool showLoading)
     {
         StartCoroutine(CoLoad(sceneName, showLoading));
@@ -58,58 +51,68 @@ public class SceneLoader : MonoBehaviour
             UIManager.Instance.ShowLoading(true);
             UIManager.Instance.SetLoadingProgress(0f);
         }
-        //print("loading");
 
-        // 다음 씬 로드
+        float visual = 0f;                     // 실제로 보여주는 게이지 값(0~1)
+        float elapsed = 0f;
+
         AsyncOperation op = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
         op.allowSceneActivation = false;
 
-        float elapsed = 0f;
-        while (op.progress < 0.9f) // 0.9 ~ ready
+        // 1) 실제 비동기 로딩 구간: 막대 0% ~ asyncPortion(예: 30%)까지만 반영
+        while (op.progress < 0.9f)
         {
             elapsed += Time.unscaledDeltaTime;
-            UIManager.Instance.SetLoadingProgress(op.progress);
+
+            // op.progress는 0~0.9 범위 → 0~1로 정규화 후 asyncPortion 스케일
+            float realNorm = Mathf.InverseLerp(0f, 0.9f, op.progress); // 0~1
+            float targetVisual = realNorm * asyncPortion;              // 0~0.30
+
+            // 살짝 매끄럽게(튀는 현상 방지)
+            visual = Mathf.MoveTowards(visual, targetVisual, Time.unscaledDeltaTime * 1.0f);
+
+            if (showLoading && UIManager.Instance)
+                UIManager.Instance.SetLoadingProgress(visual);
+
             yield return null;
         }
-        //print("11111");
-        // 최소 노출 시간 보정
-        while (elapsed < minLoadingTime)
+
+        // 2) 최소 노출 시간 보정 + 나머지 70% 연출 채우기
+        //    남은 최소 노출 시간과 연출 시간 중 더 큰 값을 사용(사용자 체감 품질 유지)
+        float remainMin = Mathf.Max(0f, minLoadingTime - elapsed);
+        float fakeFillTime = Mathf.Max(smoothFillDuration, remainMin);
+
+        // 현재 visual은 대략 asyncPortion 부근. 여기서 1.0까지 천천히 채움.
+        yield return SmoothFill(visual, 1f, fakeFillTime, p =>
         {
-            elapsed += Time.unscaledDeltaTime;
-            yield return null;
-        }
-        //print("2222");
-        // 활성화
+            if (showLoading && UIManager.Instance)
+                UIManager.Instance.SetLoadingProgress(p);
+        });
+
+        // 3) 씬 활성화
         op.allowSceneActivation = true;
         while (!op.isDone) yield return null;
 
-        // 활성 씬 지정
+        // 4) 활성 씬 설정
         var loaded = SceneManager.GetSceneByName(sceneName);
         SceneManager.SetActiveScene(loaded);
-        //print("33333");
-        // 이전 씬 언로드 (부트스트랩은 유지)
+
+        // 5) 이전 씬 언로드(부트스트랩 제외)
         for (int i = SceneManager.sceneCount - 1; i >= 0; --i)
         {
             var s = SceneManager.GetSceneAt(i);
             if (s.name != sceneName && s.isLoaded && s.name != bootstrapSceneName)
                 yield return SceneManager.UnloadSceneAsync(s);
         }
-        //print("444444");
-        // 로딩 완료
+
         if (showLoading && UIManager.Instance)
         {
             UIManager.Instance.SetLoadingProgress(1f);
             UIManager.Instance.ShowLoading(false);
         }
-        //print("loaded");
 
-        // (옵션) 로딩 종료 후 커서/타임스케일은 UIManager가 관리
         OnSceneLoaded?.Invoke(sceneName);
-        //씬 로딩 완료 콜백 호출 ybu
-
     }
 
-    // 씬 다시 로드 (리게임)
     public void ReloadActiveScene(bool showLoading = true)
     {
         string activeSceneName = SceneManager.GetActiveScene().name;
@@ -126,31 +129,43 @@ public class SceneLoader : MonoBehaviour
             UIManager.Instance.SetLoadingProgress(0f);
         }
 
-        // 1. 현재 활성 씬 언로드
+        float visual = 0f;
+        float elapsed = 0f;
+
+        // 1) 기존 활성 씬 언로드
         yield return SceneManager.UnloadSceneAsync(sceneName);
 
-        // 2. 씬을 추가적으로 다시 로드
+        // 2) 다시 로드
         AsyncOperation op = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
         op.allowSceneActivation = false;
 
-        float elapsed = 0f;
         while (op.progress < 0.9f)
         {
             elapsed += Time.unscaledDeltaTime;
-            UIManager.Instance.SetLoadingProgress(op.progress);
+
+            float realNorm = Mathf.InverseLerp(0f, 0.9f, op.progress);
+            float targetVisual = realNorm * asyncPortion;
+
+            visual = Mathf.MoveTowards(visual, targetVisual, Time.unscaledDeltaTime * 1.0f);
+
+            if (showLoading && UIManager.Instance)
+                UIManager.Instance.SetLoadingProgress(visual);
+
             yield return null;
         }
 
-        while (elapsed < minLoadingTime)
+        float remainMin = Mathf.Max(0f, minLoadingTime - elapsed);
+        float fakeFillTime = Mathf.Max(smoothFillDuration, remainMin);
+
+        yield return SmoothFill(visual, 1f, fakeFillTime, p =>
         {
-            elapsed += Time.unscaledDeltaTime;
-            yield return null;
-        }
+            if (showLoading && UIManager.Instance)
+                UIManager.Instance.SetLoadingProgress(p);
+        });
 
         op.allowSceneActivation = true;
         while (!op.isDone) yield return null;
 
-        // 3. 다시 로드된 씬을 활성 씬으로 지정
         var loaded = SceneManager.GetSceneByName(sceneName);
         SceneManager.SetActiveScene(loaded);
 
@@ -159,31 +174,37 @@ public class SceneLoader : MonoBehaviour
             UIManager.Instance.SetLoadingProgress(1f);
             UIManager.Instance.ShowLoading(false);
         }
-        OnSceneLoaded?.Invoke(sceneName);
-        // 다시 로드된 씬 콜백 호출 ybu
 
+        OnSceneLoaded?.Invoke(sceneName);
     }
+
+    // unscaledDeltaTime 기준으로 from → to를 duration 동안 선형 증가
+    IEnumerator SmoothFill(float from, float to, float duration, Action<float> onUpdate)
+    {
+        float t = 0f;
+        float start = Mathf.Clamp01(from);
+        float end = Mathf.Clamp01(to);
+
+        while (t < duration)
+        {
+            t += Time.unscaledDeltaTime;
+            float a = Mathf.Clamp01(t / Mathf.Max(0.0001f, duration));
+            float v = Mathf.Lerp(start, end, a);
+            onUpdate?.Invoke(v);
+            yield return null;
+        }
+        onUpdate?.Invoke(end);
+    }
+
     private void Update()
     {
-        // 테스트용 씬 이동 (Ctrl + F1, F2, ...)
+        // 테스트용
         if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
         {
-            if (Input.GetKeyDown(KeyCode.F1))
-            {
-                LoadSceneAdditive("Stage1", true);
-            }
-            if (Input.GetKeyDown(KeyCode.F2))
-            {
-                LoadSceneAdditive("Stage2", true);
-            }
-            if (Input.GetKeyDown(KeyCode.F3))
-            {
-                LoadSceneAdditive("Stage3", true);
-            }
-            if (Input.GetKeyDown(KeyCode.F4))
-            {
-                LoadSceneAdditive("Stage4", true);
-            }
+            if (Input.GetKeyDown(KeyCode.F1)) LoadSceneAdditive("Stage1", true);
+            if (Input.GetKeyDown(KeyCode.F2)) LoadSceneAdditive("Stage2", true);
+            if (Input.GetKeyDown(KeyCode.F3)) LoadSceneAdditive("Stage3", true);
+            if (Input.GetKeyDown(KeyCode.F4)) LoadSceneAdditive("Stage4", true);
         }
     }
 }
