@@ -3,6 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Threading.Tasks;
+using UnityEngine.Audio;
 using UnityEngine.Localization;
 using UnityEngine.Localization.Settings;
 
@@ -18,6 +19,11 @@ public class SettingUI : MonoBehaviour
     public TMP_Text languageValueText;
     public TMP_Text screenModeValueText;
 
+    [SerializeField] private AudioMixer audioMixer;
+    const string PARAM_MASTER = "MasterVol";
+    const string PARAM_BGM    = "BgmVol";
+    const string PARAM_SFX    = "SfxVol";
+    
     // 순환 후보들 (표시용 텍스트와 내부코드 매핑)
     readonly string[] langCodes = { "ko", "en" };
     readonly string[] langTexts = { "한국어", "English" };
@@ -31,6 +37,12 @@ public class SettingUI : MonoBehaviour
     void OnEnable(){
         // 패널이 켜질 때 최신 값으로 UI 갱신
         RefreshFromData();
+        if (audioMixer)
+        {
+            audioMixer.SetFloat(PARAM_MASTER, Linear01ToDb(data.masterVolume));
+            audioMixer.SetFloat(PARAM_BGM, Linear01ToDb(data.bgmVolume));
+            audioMixer.SetFloat(PARAM_SFX, Linear01ToDb(data.sfxVolume));
+        }
     }
 
     public void RefreshFromData()
@@ -55,11 +67,26 @@ public class SettingUI : MonoBehaviour
     }
 
     // 슬라이더 연결
-    public void OnMasterChanged(float v){ data.masterVolume = v; }
-    public void OnBgmChanged(float v){    data.bgmVolume    = v; }
-    public void OnSfxChanged(float v){    data.sfxVolume    = v; }
-    public void OnSensChanged(float v){   data.mouseSensitivity = v; }
+    public void OnSensChanged(float v)
+    {
+        data.mouseSensitivity = v;
+    }
 
+    static float Linear01ToDb(float v) => (v <= 0.0001f) ? -80f : Mathf.Log10(Mathf.Clamp01(v)) * 20f;
+
+    public void OnMasterChanged(float v){
+        data.masterVolume = v;
+        audioMixer.SetFloat(PARAM_MASTER, Linear01ToDb(v));
+    }
+    public void OnBgmChanged(float v){
+        data.bgmVolume = v;
+        audioMixer.SetFloat(PARAM_BGM, Linear01ToDb(v));
+    }
+    public void OnSfxChanged(float v){
+        data.sfxVolume = v;
+        audioMixer.SetFloat(PARAM_SFX, Linear01ToDb(v));
+    }
+    
     // 언어 버튼 연결
     public void OnClickLangLeft(){  langIndex = (langIndex - 1 + langCodes.Length) % langCodes.Length; UpdateLangLabel(); }
     public void OnClickLangRight(){ langIndex = (langIndex + 1) % langCodes.Length; UpdateLangLabel(); }
@@ -83,12 +110,10 @@ public class SettingUI : MonoBehaviour
         if (screenModeValueText) screenModeValueText.text = modeTexts[modeIndex];
         ApplyScreenMode(data.screenMode);
     }
-
-    // 적용 + 저장 (적용 버튼)
+    
     public void ApplyAndSave()
     {
-        // 오디오 적용(간단 버전) — 프로젝트 믹서 쓰면 거기에 매핑
-        AudioListener.volume = data.masterVolume;
+        //AudioListener.volume = data.masterVolume;
 
         // TODO: BGM/SFX는 AudioMixer 파라미터 또는 각 AudioSource에 반영
         // ex) mixer.SetFloat("BGMdB", Linear01ToDb(data.bgmVolume));
@@ -101,20 +126,19 @@ public class SettingUI : MonoBehaviour
 
     void ApplyScreenMode(string code)
     {
-        // 현재 해상도 유지한 채 전환
+        // 해상도 값 
         int w = Screen.currentResolution.width;
         int h = Screen.currentResolution.height;
 
         if (code == "fullscreen")
         {
-            Screen.fullScreenMode = FullScreenMode.FullScreenWindow; // 보더리스 권장
+            Screen.fullScreenMode = FullScreenMode.FullScreenWindow;
             Screen.SetResolution(w, h, FullScreenMode.FullScreenWindow);
             Screen.fullScreen = true;
         }
-        else // windowed
+        else
         {
             Screen.fullScreenMode = FullScreenMode.Windowed;
-            // 적당한 창 크기로 열고 싶으면 여기서 w,h를 줄이세요 (예: 1600x900)
             Screen.SetResolution(w, h, FullScreenMode.Windowed);
             Screen.fullScreen = false;
         }
@@ -124,10 +148,5 @@ public class SettingUI : MonoBehaviour
         for (int i=0;i<arr.Length;i++) if (arr[i]==code) return i;
         return -1;
     }
-
-    // 필요 시 dB 변환 유틸(오디오 믹서용)
-    public static float Linear01ToDb(float v){
-        if (v <= 0.0001f) return -80f;
-        return Mathf.Log10(v)*20f;
-    }
+    
 }

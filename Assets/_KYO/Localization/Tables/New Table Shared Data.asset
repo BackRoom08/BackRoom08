@@ -93,6 +93,10 @@ MonoBehaviour:
     m_Key: Player_stamina
     m_Metadata:
       m_Items: []
+  - m_Id: 2867087570161664
+    m_Key: Player_mental
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

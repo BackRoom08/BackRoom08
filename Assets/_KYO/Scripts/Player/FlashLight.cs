@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Audio;
 using UnityEngine.SceneManagement;
 
 public class FlashLight : MonoBehaviour
@@ -24,6 +25,7 @@ public class FlashLight : MonoBehaviour
     //후레쉬 소리
     public AudioClip flashSound;
     private AudioSource audioSource;
+    private AudioMixerGroup mixerGroup;
 
     void OnEnable()
     {
@@ -102,6 +104,10 @@ public class FlashLight : MonoBehaviour
         {
             audioSource = gameObject.AddComponent<AudioSource>();
         }
+        
+        mixerGroup = UIManager.Instance.sfxGroup;
+        if (mixerGroup != null)
+            audioSource.outputAudioMixerGroup = mixerGroup;
     }
 
     private void ApplyLightBobEffect()

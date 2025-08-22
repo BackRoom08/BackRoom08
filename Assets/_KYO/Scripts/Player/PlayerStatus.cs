@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Audio;
 using UnityEngine.UI;
 
 public class PlayerStatus : MonoBehaviour
@@ -21,10 +22,12 @@ public class PlayerStatus : MonoBehaviour
     public Transform playerDeadRoomPoint; //죽는 장소
 
     MapManager mapManager;
+    
+    private AudioMixerGroup mixerGroup;
 
     void Awake()
     {
-        GameObject textObj = GameObject.Find("MentalViewUI");
+        GameObject textObj = GameObject.Find("MentalNum");
         if (textObj == null)
         {
             return;
@@ -64,6 +67,10 @@ public class PlayerStatus : MonoBehaviour
             {
                 audioSource = gameObject.AddComponent<AudioSource>();
             }
+            
+            mixerGroup = UIManager.Instance.sfxGroup;
+            if (mixerGroup != null)
+                audioSource.outputAudioMixerGroup = mixerGroup;
         }
 
         StartCoroutine(DecreaseMentalHP()); //코루틴 시작
@@ -73,7 +80,7 @@ public class PlayerStatus : MonoBehaviour
     {
         if (MentalText != null)
         {
-            MentalText.text = $"정신력 : {currentMentalHP}";
+            MentalText.text = $"{currentMentalHP}";
         }
     }
 
