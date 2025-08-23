@@ -1,8 +1,10 @@
-// MLMonsterAgent.cs (HL + Continuous, Interrupt-aware Investigate)
-// - 순찰/수색 중이라도 '플레이어가 보이거나' '새 소리 발생' 시 즉시 인터럽트(우선순위 전환)
-// - 수색 플랜: [소리 지점] -> [스윕1] -> [스윕2] (반경 investigateRadius, 개수 investigateSweepCount)
-// - 평소엔 상태 진입 시 1회 목표만 찍고 도착/스턱/상태변경 전까지 유지
-// ※ Behavior Parameters: Observation=12, Continuous=2, Discrete=[5]
+// MLMonsterAgent.cs
+// - 외부 Noise 시스템(NoiseEvent/NoiseSystem/IAIMonsterHearing)은 그대로 사용
+// - HL(Idle/Patrol/Investigate/Stalk/Chase/Ambush) = 정책 선택. 공격 사거리만 하드 인터럽트.
+// - 액션 마스킹은 WriteDiscreteActionMask()에서 간단히 처리(브랜치 0 가정)
+// - 네비 안정화: goal lock + repath 쿨다운 + 근접 시 오프셋 축소 + 스턱 복구
+// - 애니메이터: Speed(float)만 사용
+// - enum 중복 제거: MonsterMode 하나만 사용(= 디스크리트 액션 인덱스도 동일)
 
 using System.Linq;
 using System.Collections.Generic;
@@ -10,172 +12,127 @@ using UnityEngine;
 using UnityEngine.AI;
 using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
-using Unity.MLAgents.Actuators;
+using Unity.MLAgents.Actuators; // for IDiscreteActionMask
+using URandom = UnityEngine.Random;
 
-// ── 상태 ──
 public enum MonsterMode
 {
-    Idle,         // 대기
-    Patrol,       // 순찰(목표 1회 고정 이동)
-    Investigate,  // 수색(소리/POI로 고정 이동, 소리 스윕)
-    Stalk,        // 몰래 응시(정지 2초로 스택)
-    Chase,        // 추격(래치)
-    Ambush,       // 매복(예측 차단)
-    HitIdle       // 타격 후 정지
+    Idle = 0,
+    Patrol = 1,
+    Investigate = 2,
+    Stalk = 3,
+    Chase = 4,
+    Ambush = 5
 }
+
 public interface IMonsterStatus { MonsterMode Mode { get; } }
 
 [RequireComponent(typeof(NavMeshAgent))]
 public class MLMonsterAgent : Agent, IAIMonsterHearing, IMonsterStatus
 {
-    // ===== Refs =====
+    // ───────────── Refs ─────────────
     [Header("Refs")]
     public Transform player;
     public Transform eye;
-    [Tooltip("몬스터 시야를 가리는 레이어(플레이어/몬스터 제외 권장)")]
+    [Tooltip("시야를 가리는 레이어(플레이어/몬스터 제외 권장)")]
     public LayerMask occlusionMask;
-    [Tooltip("플레이어의 눈(없으면 player 사용)")]
-    public Transform playerEye;
-    [Tooltip("플레이어 시야 가림(비우면 occlusionMask 사용)")]
-    public LayerMask playerOcclusionMask;
-    private NavMeshAgent agent;
 
-    [Tooltip("발전기 포인트 배열(루트가 지정되면 자동 채움)")]
-    public Transform[] generatorPOIs;
-    [Tooltip("순찰용 수색 포인트 배열(루트가 지정되면 자동 채움)")]
-    public Transform[] wanderPoints;
+    [Header("Player FOV(플레이어가 '날' 볼 수 있는지)")]
+    public Transform playerEye;               // 없으면 player 사용
+    public LayerMask playerOcclusionMask;     // 비우면 occlusionMask 사용
 
-    [Header("Point Roots (optional)")]
-    public Transform generatorRoot;   // 부모 아래 자식들을 자동 수집
-    public Transform searchPointRoot; // 부모 아래 자식들을 자동 수집
+    NavMeshAgent agent;
 
-    // ===== Vision =====
+    [Header("POI Roots")]
+    public Transform generatorRoot, exitDoorRoot, searchPointRoot;
+    Transform[] generatorPOIs, exitPOIs, wanderPoints;
+
+    // ───────────── Vision ─────────────
     [Header("Vision")]
     public float viewDistance = 40f;
-    [Range(0,180f)] public float viewHalfAngle = 70f;
+    [Range(0, 180f)] public float viewHalfAngle = 70f;
 
-    [Header("Player Detection (들킴 판정)")]
+    [Header("Player FOV")]
     public float playerViewDistance = 40f;
-    [Range(0,180f)] public float playerViewHalfAngle = 60f;
+    [Range(0, 180f)] public float playerViewHalfAngle = 60f;
 
-    // ===== Move/Speed =====
+    // ───────────── Move/Speed ─────────────
     [Header("Speeds")]
-    public float runSpeed = 4f;       // 기본 4
-    public float buffedRunSpeed = 6f; // 버프 6
-    public float rotateSpeed = 120f;
+    public float normalRunSpeed = 4f;
+    public float rotateSpeed = 180f;
 
-    [Header("Chase/Search")]
-    public float localMoveRadius = 3f;
-    public float investigateHoldTime = 2f;
+    [Header("Ranges & Timers")]
     public float catchDistance = 1.4f;
-    public float episodeTime = 80f;
+    public float episodeTime = 120f;
     public float pathEvalInterval = 0.5f;
 
-    [Header("Ambush")]
-    public float ambushLeadSeconds = 1.5f;
+    // ───────────── Stability ─────────────
+    [Header("Stability / Hysteresis")]
+    public bool  useActionMask       = true;
+    public float goalRetargetDistance = 3.5f;
+    public float goalArriveTolerance  = 0.8f;
+    public float minRepathInterval    = 0.40f;
+    public float minDestinationDelta  = 0.40f;
+    public float stuckSpeedEps        = 0.05f;
+    public float stuckSeconds         = 1.0f;
+    public float hlMinHoldSeconds     = 1.2f;  // HL 최소 유지
+    public float nearOffsetCutoffDist = 2.0f;  // 근접 오프셋 축소
+    public float chaseStickSeconds    = 1.5f;  // Chase 끈적임
 
-    // ===== Look-Stack / Buff =====
-    [Header("Look-Stack")]
-    public float stareStillRequiredSeconds = 2f;
-    public float stillSpeedThreshold = 0.05f;
-    public float stareStackPerSec = 1f;
-    public float stareStackThreshold = 30f;
-    public float buffDuration = 40f;
+    // ───────────── Hearing memory ─────────────
+    [Header("Hearing Memory")]
+    public float memoryNoiseSeconds = 6f;    // 소리 기억
+    public float memorySightSeconds = 4f;    // 마지막 시야 기억
+    public float noiseSmoothTime    = 0.25f; // 소리 필터
 
-    [Header("Hit/Idle After Hit")]
-    public float idleAfterHitSeconds = 5f;
-    float hitIdleTimer;
+    Vector3 lastHeardPos; float lastHeardTime; float lastHeardPower;
+    Vector3 _noiseFiltered; bool _noiseInit;
 
-    [Header("Damage")]
-    public float baseAttackDamage = 10f;
-    public float buffedAttackDamage = 18f;
-    public float currentAttackDamage = 10f;
+    // ───────────── Investigate ─────────────
+    [Header("Investigate Sweep")]
+    public float investigateRadius = 30f;
+    [Range(0, 4)] public int investigateSweepCount = 2;
+    public float sweepMinRadius = 12f;
+    public float investigateHoldTime = 2f;
 
-    [Header("Animation (옵션)")]
+    readonly List<Vector3> investPoints = new();
+    int investIndex = -1; bool investActive = false; bool investArrivedGiven = false; float investigateUntil = 0f;
+
+    // ───────────── Patrol ─────────────
+    [Header("Patrol")]
+    public Transform patrolCenter;
+    public float patrolRadius = 30f;
+    [Range(0, 1)] public float poiPriority = 0.7f; // 발전기/문 우선 비율
+    public int patrolRandomSamples = 16;
+    public float wallClearance = 0.6f;
+
+    // ───────────── Animation ─────────────
+    [Header("Animation")]
     public Animator anim;
     public string speedParam = "Speed";
-    public string chaseBool = "IsChasing";
-    public string investigateBool = "IsInvestigate";
+    bool hasSpeed;
 
-    // ===== Patrol / Wander =====
-    [Header("Patrol / Wander")]
-    public Transform patrolCenter;                 // 비우면 스폰 기준
-    public float patrolRadius = 30f;
-    [Range(0f,1f)] public float patrolPoiRatio = 0.7f; // 발전기 우선(70%)
-    public float patrolArriveTolerance = 1.2f;
-    public float patrolMinClearance = 0.6f;
-    public int   patrolRandomSamples = 16;
-    public float patrolStuckSpeedEps = 0.05f;
-    public float patrolStuckTime = 1.0f;
+    // ───────────── Runtime ─────────────
+    public MonsterMode Mode => _curMode;
+    [SerializeField] MonsterMode _curMode = MonsterMode.Patrol;
 
-    // ===== Sound memory =====
-    Vector3 lastHeardPos;
-    float   lastHeardPower;
-    float   lastHeardTime;
+    float epTimer, pathEvalTimer, lastPathLen = -1f;
 
-    // ===== Internals =====
-    float investigateUntil;
-    bool  investigateArrivedGiven;
-
-    float lastPathLen = -1f;
-    float pathEvalTimer;
-    float epTimer;
-
-    // 응시/버프/정지
-    float stareStack;
-    bool  buffActive;
-    float buffEndTime;
-    float stillTimer;
-
-    // 시야 보조
-    Vector3 lastSeenPlayerPos;
-    float   lastSeenPlayerTime;
-
-    // 플레이어 속도 추정
-    Vector3 prevPlayerPos;
-    float   prevPlayerPosTime;
-
-    [Header("Stalk vs Chase Signals")]
+    // 시야/속도 추정
+    Vector3 lastSeenPlayerPos; float lastSeenPlayerTime;
+    Vector3 prevPlayerPos; float prevPlayerTime;
+    Vector3 estPlayerVel; float estPlayerSpeed;
     public float playerSpeedNormMax = 7f;
-    float estPlayerSpeed = 0f;
 
-    // ── 상태 & 전이 플래그 ──
-    enum HL { Stalk=0, Chase=1, Investigate=2, Patrol=3, Ambush=4 }
-    [Header("Runtime Status (ReadOnly)")]
-    [SerializeField] MonsterMode _mode = MonsterMode.Idle;
-    public MonsterMode Mode => _mode;
-    void SetMode(MonsterMode m) => _mode = m;
+    // 이동 상태
+    public float localMoveRadius = 3f;
+    Vector3 _goalBase; bool _hasGoal;
+    Vector3 _lastSetDest; float _nextRepathAt;
+    float _stuckTimer;
+    int _lastHLIndex = -1; float _nextHLAllowSwitchAt;
+    float _chaseStickUntil = 0f;
 
-    HL _lastHL = (HL)(-1); // 직전 HL
-    bool _enteredPatrol, _enteredInvestigate;
-
-    // ── Patrol 내부 상태 ──
-    Vector3 _patrolTarget;
-    bool    _patrolHasTarget = false;
-    float   _patrolStuckTimer = 0f;
-    Vector3 _spawnPoint;
-
-    // ── Investigate 플랜(소리 지점 + 스윕 2곳) ──
-    [Header("Investigate Sweep")]
-    public float investigateRadius = 30f;      // 스윕 반경
-    [Range(1,4)] public int investigateSweepCount = 2; // 스윕 지점 수
-    public float sweepMinRadius = 12f;         // 스윕 최소 반경
-    List<Vector3> _investPoints = new List<Vector3>(); // 0: 소리 지점, 1..: 스윕
-    int _investIndex = -1;                     // 현재 목표 인덱스
-    bool _investActive = false;
-
-    // 애니 파라미터 캐싱
-    bool _hasSpeed, _hasChase, _hasInvestigate;
-
-    // ── Chase 래치(플레이어용 추격 신호) ──
-    [Header("Chase Latch (export to player)")]
-    public float chaseAcquireTime = 0.2f;
-    public float chaseReleaseTime = 0.8f;
-    public float chaseMemoryTime  = 2.5f;
-    public float chaseNoiseMaxDistance = 12f;
-    public float chaseMaxExportDistance = 55f;
-    bool chaseLatched = false;
-    float chaseOnTimer = 0f, chaseOffTimer = 0f;
+    const float EPS = 1e-6f;
 
     void Awake()
     {
@@ -183,349 +140,210 @@ public class MLMonsterAgent : Agent, IAIMonsterHearing, IMonsterStatus
         if (!eye) eye = transform;
         if (playerOcclusionMask.value == 0) playerOcclusionMask = occlusionMask;
 
-        agent.updateRotation = false;
-        agent.autoRepath = true;
+        agent.updateRotation = true;
+        agent.autoRepath     = true;
 
-        currentAttackDamage = baseAttackDamage;
-
-        RebuildPointArraysIfNeeded();
+        RebuildPOIs();
     }
 
     void Start()
     {
         if (anim)
-        {
-            _hasSpeed       = anim.parameters.Any(p => p.name == speedParam && p.type == AnimatorControllerParameterType.Float);
-            _hasChase       = anim.parameters.Any(p => p.name == chaseBool  && p.type == AnimatorControllerParameterType.Bool);
-            _hasInvestigate = anim.parameters.Any(p => p.name == investigateBool && p.type == AnimatorControllerParameterType.Bool);
-        }
+            hasSpeed = anim.parameters.Any(p => p.name == speedParam && p.type == AnimatorControllerParameterType.Float);
+
+        if (agent && !agent.isOnNavMesh) agent.Warp(SampleNav(transform.position));
     }
 
-    void RebuildPointArraysIfNeeded()
+    void RebuildPOIs()
     {
-        if (generatorRoot)
-        {
-            var list = new List<Transform>();
-            for (int i = 0; i < generatorRoot.childCount; i++)
-            {
-                var c = generatorRoot.GetChild(i);
-                if (c && c.gameObject.activeInHierarchy) list.Add(c);
-            }
-            if (list.Count > 0) generatorPOIs = list.ToArray();
-        }
+        generatorPOIs = CollectChildren(generatorRoot);
+        exitPOIs      = CollectChildren(exitDoorRoot);
+        wanderPoints  = CollectChildren(searchPointRoot);
+    }
 
-        if (searchPointRoot)
+    Transform[] CollectChildren(Transform root)
+    {
+        if (!root) return System.Array.Empty<Transform>();
+        var list = new List<Transform>();
+        for (int i = 0; i < root.childCount; i++)
         {
-            var list = new List<Transform>();
-            for (int i = 0; i < searchPointRoot.childCount; i++)
-            {
-                var c = searchPointRoot.GetChild(i);
-                if (c && c.gameObject.activeInHierarchy) list.Add(c);
-            }
-            if (list.Count > 0) wanderPoints = list.ToArray();
+            var c = root.GetChild(i);
+            if (c && c.gameObject.activeInHierarchy) list.Add(c);
         }
+        return list.ToArray();
     }
 
     public override void OnEpisodeBegin()
     {
-        Vector3 m = transform.position + Random.insideUnitSphere * 12f; m.y = 0f;
-        Vector3 p = (player ? player.position : transform.position) + Random.insideUnitSphere * 12f; p.y = 0f;
+        RebuildPOIs();
 
-        var mPos = SampleNav(m);
-        var pPos = SampleNav(p);
+        Vector3 m = transform.position + URandom.insideUnitSphere * 8f; m.y = 0f;
+        Vector3 p = (player ? player.position : transform.position) + URandom.insideUnitSphere * 8f; p.y = 0f;
 
         agent.ResetPath();
-        agent.Warp(mPos);
-        if (player) player.position = pPos;
+        agent.Warp(SampleNav(m));
+        if (player) player.position = SampleNav(p);
 
-        _spawnPoint = transform.position;
-        _patrolHasTarget = false;
-        _patrolStuckTimer = 0f;
+        epTimer = 0f; pathEvalTimer = 0f; lastPathLen = -1f;
 
-        ResetInvestigatePlan();
+        lastSeenPlayerPos = transform.position; lastSeenPlayerTime = -999f;
 
-        lastHeardPos   = agent.transform.position;
-        lastHeardPower = 0f;
-        lastHeardTime  = -999f;
+        lastHeardPos = transform.position; lastHeardTime = -999f; lastHeardPower = 0f;
+        _noiseFiltered = lastHeardPos; _noiseInit = false;
 
-        lastPathLen = GetPathLength(agent.transform.position, player ? player.position : agent.transform.position);
-        pathEvalTimer = 0f;
-        epTimer = 0f;
+        prevPlayerPos = player ? player.position : transform.position; prevPlayerTime = Time.time;
 
-        hitIdleTimer = 0f;
-
-        stareStack = 0f;
-        buffActive = false;
-        buffEndTime = 0f;
-        stillTimer = 0f;
-
-        lastSeenPlayerPos = transform.position;
-        lastSeenPlayerTime = -999f;
-
-        if (player)
-        {
-            prevPlayerPos = player.position;
-            prevPlayerPosTime = Time.time;
-        }
-
-        currentAttackDamage = baseAttackDamage;
-
-        chaseLatched = false; chaseOnTimer = chaseOffTimer = 0f;
-
-        RebuildPointArraysIfNeeded();
-
-        SetMode(MonsterMode.Patrol);
-        _lastHL = (HL)(-1);
+        _hasGoal = false; _nextRepathAt = 0f; _stuckTimer = 0f; _lastHLIndex = -1; _nextHLAllowSwitchAt = 0f;
+        _curMode = MonsterMode.Patrol;
     }
 
-    // 외부 HearingSensor에서 호출
-    public void OnHearNoise(Vector3 pos, float perceived, NoiseEvent raw)
+    // ───────────── Hearing (외부 시스템 콜백) ─────────────
+    public void OnHearNoise(Vector3 pos, float percevied, NoiseEvent raw)
     {
         lastHeardPos   = pos;
-        lastHeardPower = Mathf.Clamp01(perceived);
+        lastHeardPower = Mathf.Clamp01(percevied);
         lastHeardTime  = Time.time;
 
-        // ★ 새로운 수색 플랜을 즉시 구성(소리 → 스윕 두 곳)
+        if (!_noiseInit) { _noiseFiltered = pos; _noiseInit = true; }
         BuildInvestigatePlan(pos);
     }
 
-    // ===== Observations (12-dim) =====
+    // ───────────── Observations(=14) ─────────────
     public override void CollectObservations(VectorSensor sensor)
     {
-        bool iSeePlayer   = CanSeePlayer(out _);
-        bool playerSeesMe = PlayerCanSeeMe();
+        bool iSee = CanSeePlayer(out _);
+        bool seenBy = PlayerCanSeeMe();
 
-        sensor.AddObservation(iSeePlayer ? 1f : 0f);
-        sensor.AddObservation(playerSeesMe ? 1f : 0f);
+        sensor.AddObservation(iSee ? 1f : 0f);                         // 1
+        sensor.AddObservation(seenBy ? 1f : 0f);                       // 2
 
         Vector3 toP = player ? (player.position - transform.position) : Vector3.zero; toP.y = 0f;
-        Vector2 toPdir = toP.sqrMagnitude > 1e-6f ? new Vector2(toP.x, toP.z).normalized : Vector2.zero;
-        sensor.AddObservation(toPdir);
-        sensor.AddObservation(Mathf.Clamp01(toP.magnitude/50f));
+        Vector2 toPdir = toP.sqrMagnitude > EPS ? new Vector2(toP.x, toP.z).normalized : Vector2.zero;
+        sensor.AddObservation(toPdir);                                  // 3-4
+        sensor.AddObservation(Mathf.Clamp01(toP.magnitude / 50f));      // 5
+
+        float angleMeToP = 0f, anglePToMe = 0f;
+        if (toP.sqrMagnitude > EPS) angleMeToP = Vector3.Angle(transform.forward, toP.normalized) / 180f;
+        if (player)
+        {
+            Vector3 v = (transform.position - player.position); v.y = 0f;
+            if (v.sqrMagnitude > EPS) anglePToMe = Vector3.Angle((playerEye ? playerEye : player).forward, v.normalized) / 180f;
+        }
+        sensor.AddObservation(angleMeToP);                               // 6
+        sensor.AddObservation(anglePToMe);                               // 7
 
         Vector3 toN = lastHeardPos - transform.position; toN.y = 0f;
-        Vector2 toNdir = toN.sqrMagnitude > 1e-6f ? new Vector2(toN.x, toN.z).normalized : Vector2.zero;
-        sensor.AddObservation(toNdir);
-        sensor.AddObservation(Mathf.Clamp01((Time.time - lastHeardTime)/6f));
-        sensor.AddObservation(Mathf.Clamp01(lastHeardPower));
+        Vector2 toNdir = toN.sqrMagnitude > EPS ? new Vector2(toN.x, toN.z).normalized : Vector2.zero;
+        sensor.AddObservation(toNdir);                                   // 8-9
+        sensor.AddObservation(Mathf.Clamp01((Time.time - lastHeardTime) / memoryNoiseSeconds)); // 10
+        sensor.AddObservation(Mathf.Clamp01(lastHeardPower));            // 11
 
-        sensor.AddObservation(Mathf.Clamp01(stareStack / Mathf.Max(0.001f, stareStackThreshold)));
-
-        sensor.AddObservation(Mathf.Clamp01(estPlayerSpeed / Mathf.Max(0.001f, playerSpeedNormMax)));
-        sensor.AddObservation(buffActive ? 1f : 0f);
+        sensor.AddObservation(0f);                                       // 12 (stare fraction, 현재 미사용)
+        sensor.AddObservation(Mathf.Clamp01(estPlayerSpeed / Mathf.Max(0.001f, playerSpeedNormMax))); // 13
+        sensor.AddObservation(0f);                                       // 14 (buffActive? 0)
     }
 
+    // ───────────── Action Mask (브랜치 0 가정) ─────────────
+    public override void WriteDiscreteActionMask(IDiscreteActionMask actionMask)
+    {
+        if (!useActionMask) return;
+
+        // 버전 호환을 위해 ActionSpec 접근 없이 브랜치 0만 마스킹
+        Vector3 tmp;
+        bool iSee = CanSeePlayer(out tmp);
+        bool haveNoise = (Time.time - lastHeardTime) < memoryNoiseSeconds;
+
+        const int branch = 0; // HL 브랜치
+        if (!iSee)      actionMask.SetActionEnabled(branch, (int)MonsterMode.Stalk,       false);
+        if (!haveNoise) actionMask.SetActionEnabled(branch, (int)MonsterMode.Investigate, false);
+        if (!iSee && !haveNoise)
+        {
+            actionMask.SetActionEnabled(branch, (int)MonsterMode.Chase,  false);
+            actionMask.SetActionEnabled(branch, (int)MonsterMode.Ambush, false);
+        }
+    }
+
+    // ───────────── Main Tick ─────────────
     public override void OnActionReceived(ActionBuffers actions)
     {
         float dt = Time.deltaTime;
-
-        // 히트 후 강제 정지
-        if (hitIdleTimer > 0f)
-        {
-            hitIdleTimer -= dt;
-            agent.isStopped = true;
-            AddReward(-0.04f * dt);
-            SetMode(MonsterMode.HitIdle);
-            UpdateAnimatorFlags(false, false);
-            return;
-        }
-
-        // 버프 만료
-        if (buffActive && Time.time >= buffEndTime)
-        {
-            buffActive = false;
-            currentAttackDamage = baseAttackDamage;
-            stareStack = 0f;
-        }
-
-        // 인지 판정
-        bool iSeePlayer   = CanSeePlayer(out Vector3 ppos);
-        bool playerSeesMe = PlayerCanSeeMe();
-        bool hasRecentNoise = (Time.time - lastHeardTime) < 6f;
-
-        if (iSeePlayer) { lastSeenPlayerPos = ppos; lastSeenPlayerTime = Time.time; }
+        epTimer += dt;
 
         // 플레이어 속도 추정
-        Vector3 playerVel = Vector3.zero;
         if (player)
         {
-            float pdt = Mathf.Max(1e-4f, Time.time - prevPlayerPosTime);
-            playerVel = (player.position - prevPlayerPos) / pdt;
-            estPlayerSpeed = new Vector3(playerVel.x, 0f, playerVel.z).magnitude;
+            float pdt = Mathf.Max(1e-4f, Time.time - prevPlayerTime);
+            estPlayerVel   = (player.position - prevPlayerPos) / pdt;
+            estPlayerSpeed = new Vector3(estPlayerVel.x, 0f, estPlayerVel.z).magnitude;
+            prevPlayerPos  = player.position; prevPlayerTime = Time.time;
         }
 
-        // 정지 판정
-        bool actuallyStill =
-            agent.isStopped ||
-            agent.velocity.magnitude <= stillSpeedThreshold ||
-            (!agent.hasPath || agent.remainingDistance <= agent.stoppingDistance + 0.05f);
-
-        if (actuallyStill) stillTimer += dt; else stillTimer = 0f;
-
-        // === High-level action & enter flags ===
-        int hlRaw = actions.DiscreteActions.Length > 0 ? actions.DiscreteActions[0] : 1; // 기본 Chase
-        HL hl = (HL)Mathf.Clamp(hlRaw, 0, 4);
-        _enteredPatrol      = (hl == HL.Patrol      && _lastHL != HL.Patrol);
-        _enteredInvestigate = (hl == HL.Investigate && _lastHL != HL.Investigate);
-
-        // ----- 스택 처리 -----
-        bool canStack = (hl == HL.Stalk) && iSeePlayer && !playerSeesMe && (stillTimer >= stareStillRequiredSeconds);
-        if (canStack)
+        // 소리 EMA
+        if ((Time.time - lastHeardTime) < memoryNoiseSeconds && _noiseInit)
         {
-            stareStack += stareStackPerSec * dt;
-            AddReward(+0.04f * dt);
-            if (!buffActive && stareStack >= stareStackThreshold)
-            {
-                buffActive = true;
-                buffEndTime = Time.time + buffDuration;
-                currentAttackDamage = buffedAttackDamage;
-                AddReward(+0.6f);
-            }
+            float a = 1f - Mathf.Exp(-dt / Mathf.Max(0.01f, noiseSmoothTime));
+            _noiseFiltered = Vector3.Lerp(_noiseFiltered, lastHeardPos, a);
         }
 
-        // ── ★ 인터럽트 우선순위 ───────────────────────────
-        // 1) 플레이어가 보이면 무조건 추격
-        if (iSeePlayer)
+        // 시야 메모리
+        bool iSee = CanSeePlayer(out Vector3 ppos);
+        if (iSee) { lastSeenPlayerPos = ppos; lastSeenPlayerTime = Time.time; }
+
+        float curSpeed = normalRunSpeed;
+        agent.stoppingDistance = 0.1f;
+
+        // 공격 사거리(유일한 하드 인터럽트)
+        if (player && Vector3.Distance(transform.position, player.position) <= catchDistance)
         {
-            Vector3 baseTarget = ppos;
-            MoveTo(baseTarget, buffActive ? buffedRunSpeed : runSpeed, actions);
-            SetMode(MonsterMode.Chase);
-            DoCommon(dt, iSeePlayer);
-            _lastHL = hl;
-            if (player) { prevPlayerPos = player.position; prevPlayerPosTime = Time.time; }
+            AddReward(+1.0f);
+            EndEpisode();
             return;
         }
 
-        // 2) 수색 플랜이 활성화돼 있으면(새 소리 등) → Investigate 강행
-        if (_investActive)
+        // 스턱 관리
+        bool movingSlow = agent.velocity.magnitude < stuckSpeedEps;
+        _stuckTimer = movingSlow ? _stuckTimer + dt : 0f;
+
+        // === HL 선택(최소 유지 + Chase 끈적임) ===
+        int reqHL = actions.DiscreteActions.Length > 0 ? Mathf.Clamp(actions.DiscreteActions[0], 0, 5) : (int)MonsterMode.Patrol;
+        if (_lastHLIndex == (int)MonsterMode.Chase && reqHL != (int)MonsterMode.Chase && Time.time < _chaseStickUntil)
+            reqHL = (int)MonsterMode.Chase;
+
+        int hl = reqHL;
+        if (_lastHLIndex >= 0 && Time.time < _nextHLAllowSwitchAt) hl = _lastHLIndex;
+
+        if (hl != _lastHLIndex)
         {
-            RunInvestigatePlan(dt, actions);
-            SetMode(MonsterMode.Investigate);
-            DoCommon(dt, iSeePlayer);
-            _lastHL = hl;
-            if (player) { prevPlayerPos = player.position; prevPlayerPosTime = Time.time; }
-            return;
-        }
-        // ────────────────────────────────────────────────
-
-        // === 이동/행동 (인터럽트 없을 때만 HL 수행) ===
-        switch (hl)
-        {
-            case HL.Stalk:
-            {
-                agent.isStopped = true;
-                Vector3 look = (lastSeenPlayerPos - transform.position); look.y = 0f;
-                if (look.sqrMagnitude > 1e-6f)
-                    transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(look), rotateSpeed * dt);
-                if (playerSeesMe) AddReward(-0.08f * dt);
-                break;
-            }
-            case HL.Chase:
-            {
-                Vector3 baseTarget = (Time.time - lastSeenPlayerTime < 5f) ? lastSeenPlayerPos :
-                                     (hasRecentNoise ? lastHeardPos : transform.position + transform.forward * 2f);
-                MoveTo(baseTarget, buffActive ? buffedRunSpeed : runSpeed, actions);
-                if (!buffActive && estPlayerSpeed >= agent.speed - 0.2f)
-                    AddReward(-0.02f * dt);
-                SetMode(MonsterMode.Chase);
-                break;
-            }
-            case HL.Investigate:
-            {
-                // HL에서 Investigate를 선택했지만, 소리 플랜이 없으면 근접 POI/포인트를 1회만 고정
-                if (_enteredInvestigate && !_investActive)
-                {
-                    Vector3 seed;
-                    if (!TryGetNearestValidPoint(generatorPOIs, transform.position, out seed))
-                        if (!TryGetNearestValidPoint(wanderPoints, transform.position, out seed))
-                            seed = lastHeardPos;
-                    BuildInvestigatePlan(seed);
-                }
-                RunInvestigatePlan(dt, actions);
-                SetMode(MonsterMode.Investigate);
-                break;
-            }
-            case HL.Patrol:
-            {
-                bool arrived = !agent.pathPending && agent.hasPath &&
-                               agent.remainingDistance <= Mathf.Max(patrolArriveTolerance, agent.stoppingDistance + 0.05f);
-
-                bool verySlow = agent.velocity.sqrMagnitude < (patrolStuckSpeedEps * patrolStuckSpeedEps);
-                bool isPartialPath = agent.pathStatus == NavMeshPathStatus.PathPartial;
-                if (verySlow || isPartialPath) _patrolStuckTimer += dt; else _patrolStuckTimer = 0f;
-
-                if (_enteredPatrol || !_patrolHasTarget || arrived || _patrolStuckTimer >= patrolStuckTime)
-                {
-                    _patrolTarget = PickPatrolTarget();
-                    _patrolHasTarget = true;
-                    _patrolStuckTimer = 0f;
-                }
-
-                MoveTo(_patrolTarget, buffActive ? buffedRunSpeed : runSpeed, actions);
-                if (arrived) AddReward(+0.01f * dt);
-
-                Transform poi = GetNearestPOI(transform.position);
-                if (poi && Vector3.SqrMagnitude(transform.position - poi.position) < 3f*3f)
-                    AddReward(+0.01f * dt);
-
-                SetMode(MonsterMode.Patrol);
-                break;
-            }
-            case HL.Ambush:
-            default:
-            {
-                Vector3 predict = (player ? player.position + playerVel * ambushLeadSeconds : lastSeenPlayerPos);
-                MoveTo(predict, buffActive ? buffedRunSpeed : runSpeed, actions);
-                if (!PlayerCanSeeMe()) AddReward(+0.02f * dt);
-                SetMode(MonsterMode.Ambush);
-                break;
-            }
+            if (_lastHLIndex == (int)MonsterMode.Chase) _chaseStickUntil = Time.time + chaseStickSeconds;
+            _hasGoal = false; _stuckTimer = 0f; _lastHLIndex = hl;
+            _nextHLAllowSwitchAt = Time.time + hlMinHoldSeconds;
         }
 
-        DoCommon(dt, iSeePlayer);
-        _lastHL = hl;
-        if (player) { prevPlayerPos = player.position; prevPlayerPosTime = Time.time; }
-    }
+        switch ((MonsterMode)hl)
+        {
+            case MonsterMode.Idle:        agent.isStopped = true; _curMode = MonsterMode.Idle; break;
+            case MonsterMode.Patrol:      PatrolTick(curSpeed, actions);      _curMode = MonsterMode.Patrol; break;
+            case MonsterMode.Investigate: InvestigateTick(curSpeed, actions);  _curMode = MonsterMode.Investigate; break;
+            case MonsterMode.Stalk:       StalkTick(curSpeed, iSee, actions);  _curMode = MonsterMode.Stalk; break;
+            case MonsterMode.Chase:       ChaseTick(curSpeed, iSee, actions);  _curMode = MonsterMode.Chase; break;
+            case MonsterMode.Ambush:      AmbushTick(curSpeed, actions);       _curMode = MonsterMode.Ambush; break;
+        }
 
-    // 공통 보상/이벤트/종료 처리
-    void DoCommon(float dt, bool iSeePlayer)
-    {
-        AddReward(-0.02f * dt);
-        if (iSeePlayer && Mode == MonsterMode.Chase) AddReward(+0.03f * dt);
+        // 공통 보상/관리
+        AddReward(-0.01f * dt);
 
         pathEvalTimer += dt;
         if (pathEvalTimer >= pathEvalInterval)
         {
             float curLen = GetPathLength(transform.position, player ? player.position : transform.position);
             if (lastPathLen > 0f && curLen + 0.2f < lastPathLen) AddReward(+0.02f);
-            lastPathLen = curLen;
-            pathEvalTimer = 0f;
+            lastPathLen = curLen; pathEvalTimer = 0f;
         }
 
-        agent.stoppingDistance = catchDistance * 0.8f;
-        if (player && Vector3.Distance(transform.position, player.position) <= catchDistance)
-        {
-            AddReward(buffActive ? +1.5f : +1.0f);
-            hitIdleTimer = idleAfterHitSeconds;
-            agent.ResetPath();
-            agent.isStopped = true;
-            SetMode(MonsterMode.HitIdle);
-            UpdateAnimatorFlags(false, false);
-            return;
-        }
+        if (anim && hasSpeed)
+            anim.SetFloat(speedParam, agent.velocity.magnitude);
 
-        epTimer += dt;
-        if (epTimer >= episodeTime)
-        {
-            AddReward(-0.2f);
-            EndEpisode();
-            return;
-        }
-
-        UpdateExportMode(iSeePlayer, (Time.time - lastHeardTime) < 6f, (HL)0, dt); // HL은 중요치 않음(래치용)
-        bool animChase = (_mode == MonsterMode.Chase);
-        bool animInvestigate = (_mode == MonsterMode.Investigate);
-        UpdateAnimatorFlags(animChase && iSeePlayer, animInvestigate);
+        if (epTimer >= episodeTime) { AddReward(-0.2f); EndEpisode(); }
     }
 
     public override void Heuristic(in ActionBuffers actionsOut)
@@ -535,261 +353,215 @@ public class MLMonsterAgent : Agent, IAIMonsterHearing, IMonsterStatus
         ca[1] = (Input.GetKey(KeyCode.W) ? 1 : 0) + (Input.GetKey(KeyCode.S) ? -1 : 0);
 
         var da = actionsOut.DiscreteActions;
-        if (Input.GetKey(KeyCode.Alpha1)) da[0] = (int)HL.Stalk;
-        else if (Input.GetKey(KeyCode.Alpha2)) da[0] = (int)HL.Chase;
-        else if (Input.GetKey(KeyCode.Alpha3)) da[0] = (int)HL.Investigate;
-        else if (Input.GetKey(KeyCode.Alpha4)) da[0] = (int)HL.Patrol;
-        else if (Input.GetKey(KeyCode.Alpha5)) da[0] = (int)HL.Ambush;
-        else da[0] = (int)HL.Patrol;
+        if      (Input.GetKey(KeyCode.Alpha1)) da[0] = (int)MonsterMode.Idle;
+        else if (Input.GetKey(KeyCode.Alpha2)) da[0] = (int)MonsterMode.Patrol;
+        else if (Input.GetKey(KeyCode.Alpha3)) da[0] = (int)MonsterMode.Investigate;
+        else if (Input.GetKey(KeyCode.Alpha4)) da[0] = (int)MonsterMode.Stalk;
+        else if (Input.GetKey(KeyCode.Alpha5)) da[0] = (int)MonsterMode.Chase;
+        else if (Input.GetKey(KeyCode.Alpha6)) da[0] = (int)MonsterMode.Ambush;
+        else da[0] = (int)MonsterMode.Patrol;
     }
 
-    // ===== Investigate 플랜 =====
-    void ResetInvestigatePlan()
+    // ──────────────── Ticks ────────────────
+    void PatrolTick(float speed, ActionBuffers a)
     {
-        _investPoints.Clear();
-        _investIndex = -1;
-        _investActive = false;
-        investigateArrivedGiven = false;
-        investigateUntil = 0f;
+        Vector3 baseTarget = PickPatrolTarget();
+        MoveToStable(baseTarget, speed, a);
+        Transform poi = GetNearestPOI(transform.position, includeExit: true);
+        if (poi && Vector3.SqrMagnitude(transform.position - poi.position) < 9f) AddReward(+0.01f);
     }
 
-    void BuildInvestigatePlan(Vector3 center)
+    void InvestigateTick(float speed, ActionBuffers a)
     {
-        ResetInvestigatePlan();
+        if (!investActive && (Time.time - lastHeardTime) < memoryNoiseSeconds) BuildInvestigatePlan(lastHeardPos);
+        if (!investActive) { Vector3 seed = transform.position + transform.forward * 5f; BuildInvestigatePlan(seed); }
 
-        // 0) 소리 지점
-        if (TrySampleSafe(center, out var p0)) _investPoints.Add(p0);
-        else _investPoints.Add(center);
+        Vector3 target = investPoints[investIndex];
+        float dist = Vector3.Distance(transform.position, target);
 
-        // 1..N) 스윕 포인트(반경 sweepMinRadius ~ investigateRadius)
-        for (int i = 0; i < investigateSweepCount; i++)
+        if (investIndex == 0 && dist <= 1.2f)
         {
-            for (int t = 0; t < 10; t++)
-            {
-                float ang = Random.Range(0f, 360f) * Mathf.Deg2Rad;
-                float r   = Random.Range(sweepMinRadius, investigateRadius);
-                Vector3 cand = center + new Vector3(Mathf.Cos(ang), 0f, Mathf.Sin(ang)) * r;
-                if (TrySampleSafe(cand, out var ps))
-                {
-                    _investPoints.Add(ps);
-                    break;
-                }
-            }
-        }
-
-        _investIndex = 0;
-        _investActive = true;
-    }
-
-    void RunInvestigatePlan(float dt, ActionBuffers actions)
-    {
-        if (!_investActive || _investIndex < 0 || _investIndex >= _investPoints.Count)
-        { ResetInvestigatePlan(); return; }
-
-        Vector3 target = _investPoints[_investIndex];
-        float dist2 = (transform.position - target).sqrMagnitude;
-
-        if (_investIndex == 0 && dist2 <= 1f * 1f)
-        {
-            // 소리 지점 도착 → 잠깐 둘러보기
-            if (!investigateArrivedGiven)
-            {
-                AddReward(+0.2f);
-                investigateArrivedGiven = true;
-                investigateUntil = Time.time + investigateHoldTime;
-            }
-            agent.isStopped = true;
-            transform.Rotate(0f, rotateSpeed * dt, 0f);
-
-            if (Time.time >= investigateUntil && investigateUntil > 0f)
-            {
-                _investIndex++; // 다음 스윕으로
-            }
+            if (!investArrivedGiven) { AddReward(+0.15f); investArrivedGiven = true; investigateUntil = Time.time + investigateHoldTime; }
+            Face(transform.position + transform.right, rotateSpeed * Time.deltaTime);
+            if (Time.time >= investigateUntil) NextInvestPointOrEnd();
         }
         else
         {
-            MoveTo(target, buffActive ? buffedRunSpeed : runSpeed, actions);
-            if (dist2 <= 1.0f * 1.0f)
+            MoveToStable(target, speed, a);
+            if (dist <= 0.8f) NextInvestPointOrEnd();
+        }
+    }
+
+    void StalkTick(float speed, bool iSeeNow, ActionBuffers a)
+    {
+        // 간단: 마지막 시야 지점으로 접근
+        Vector3 baseTarget =
+            (Time.time - lastSeenPlayerTime) < memorySightSeconds ? lastSeenPlayerPos
+                                                                  : transform.position + transform.forward * 2f;
+        MoveToStable(baseTarget, speed, a);
+    }
+
+    void ChaseTick(float speed, bool iSeeNow, ActionBuffers a)
+    {
+        Vector3 baseTarget =
+            iSeeNow ? lastSeenPlayerPos :
+            ((Time.time - lastSeenPlayerTime) < memorySightSeconds ? lastSeenPlayerPos :
+             ((Time.time - lastHeardTime) < memoryNoiseSeconds ? _noiseFiltered : transform.position + transform.forward * 3f));
+
+        MoveToStable(baseTarget, speed, a);
+    }
+
+    void AmbushTick(float speed, ActionBuffers a)
+    {
+        Vector3 predict = player ? player.position + estPlayerVel * 1.5f : lastSeenPlayerPos;
+        MoveToStable(predict, speed, a);
+    }
+
+    // ───────────── Investigate utils ─────────────
+    void BuildInvestigatePlan(Vector3 center)
+    {
+        investPoints.Clear();
+        investIndex = -1; investActive = false; investArrivedGiven = false; investigateUntil = 0f;
+
+        investPoints.Add(TrySampleSafe(center, out var p0) ? p0 : center);
+
+        for (int i = 0; i < investigateSweepCount; i++)
+        {
+            for (int t = 0; t < 12; t++)
             {
-                _investIndex++;
+                float ang = (360f / 12f) * t * Mathf.Deg2Rad;
+                float r   = URandom.Range(sweepMinRadius, investigateRadius);
+                Vector3 cand = center + new Vector3(Mathf.Cos(ang), 0f, Mathf.Sin(ang)) * r;
+                if ((cand - transform.position).sqrMagnitude < 36f) continue; // 6m 미만 제외
+                if (TrySampleSafe(cand, out var ps)) { investPoints.Add(ps); break; }
             }
         }
 
-        if (_investIndex >= _investPoints.Count)
+        investIndex = 0; investActive = true;
+
+        if (Vector3.SqrMagnitude(transform.position - investPoints[0]) < 4f)
         {
-            // 플랜 종료
-            ResetInvestigatePlan();
+            Vector3 n = center + URandom.insideUnitSphere * 6f; n.y = center.y;
+            if (TrySampleSafe(n, out var pn)) investPoints[0] = pn;
         }
     }
 
-    // ===== Utils =====
-    bool LineOfSightClear(Vector3 from, Vector3 to, LayerMask mask)
+    void NextInvestPointOrEnd()
     {
-        Vector3 dir = to - from;
-        float dist = dir.magnitude;
-        if (dist <= 0.001f) return true;
-        dir /= dist;
-        return !Physics.Raycast(from, dir, dist, mask, QueryTriggerInteraction.Ignore);
+        investIndex++;
+        if (investIndex >= investPoints.Count) { investActive = false; investIndex = -1; }
     }
 
-    bool CanSeePlayer(out Vector3 pos)
+    // ───────────── Navigation core ─────────────
+    void MoveToStable(Vector3 baseTarget, float speed, ActionBuffers a)
     {
-        pos = Vector3.zero;
-        if (!player) return false;
+        if (!_hasGoal) SetGoal(baseTarget);
+        else
+        {
+            float distNew = Vector3.Distance(_goalBase, baseTarget);
+            if (distNew > goalRetargetDistance || Arrived(_goalBase) || Stuck()) SetGoal(baseTarget);
+        }
 
-        Vector3 v = player.position - eye.position;
-        float d = v.magnitude;
-        if (d > viewDistance) return false;
+        float ax = Mathf.Clamp(a.ContinuousActions[0], -1f, 1f);
+        float az = Mathf.Clamp(a.ContinuousActions[1], -1f, 1f);
+        if (Mathf.Abs(ax) < 0.05f) ax = 0f; if (Mathf.Abs(az) < 0.05f) az = 0f;
 
-        Vector3 f = transform.forward; f.y = 0f;
-        Vector3 flat = v; flat.y = 0f;
-        if (Vector3.Angle(f, flat) > viewHalfAngle) return false;
-
-        if (!LineOfSightClear(eye.position, player.position, occlusionMask))
-            return false;
-
-        pos = player.position;
-        return true;
-    }
-
-    bool PlayerCanSeeMe()
-    {
-        if (!player) return false;
-        Transform pEye = playerEye ? playerEye : player;
-
-        Vector3 v = transform.position - pEye.position;
-        float d = v.magnitude;
-        if (d > playerViewDistance) return false;
-
-        Vector3 pf = pEye.forward; pf.y = 0f;
-        Vector3 flat = v; flat.y = 0f;
-        if (Vector3.Angle(pf, flat) > playerViewHalfAngle) return false;
-
-        var mask = (playerOcclusionMask.value == 0 ? occlusionMask : playerOcclusionMask);
-        if (!LineOfSightClear(pEye.position, transform.position, mask))
-            return false;
-
-        return true;
-    }
-
-    void MoveTo(Vector3 baseTarget, float speed, ActionBuffers actions)
-    {
-        // 연속 오프셋(로컬)
-        float ax = Mathf.Clamp(actions.ContinuousActions[0], -1f, 1f);
-        float az = Mathf.Clamp(actions.ContinuousActions[1], -1f, 1f);
-        Vector3 worldOffset = transform.TransformDirection(new Vector3(ax, 0f, az)) * localMoveRadius;
-        Vector3 final = baseTarget + worldOffset;
+        float distToGoal = Vector3.Distance(transform.position, _goalBase);
+        float offScale   = Mathf.Clamp01((distToGoal - nearOffsetCutoffDist) / Mathf.Max(0.001f, localMoveRadius));
+        Vector3 offset   = transform.TransformDirection(new Vector3(ax, 0f, az)) * (localMoveRadius * offScale);
+        Vector3 final    = _goalBase + offset;
 
         agent.isStopped = false;
-        agent.speed = speed;
-        SetDestination(final);
+        agent.speed     = speed;
+
+        if (Time.time >= _nextRepathAt || (_lastSetDest - final).sqrMagnitude > (minDestinationDelta * minDestinationDelta))
+        {
+            SetDestinationSafe(final);
+            _lastSetDest  = final;
+            _nextRepathAt = Time.time + minRepathInterval;
+        }
 
         if (agent.hasPath)
         {
             Vector3 to = agent.steeringTarget - transform.position; to.y = 0f;
-            if (to.sqrMagnitude > 1e-6f)
+            if (to.sqrMagnitude > EPS)
             {
                 var rot = Quaternion.LookRotation(to, Vector3.up);
-                transform.rotation = Quaternion.RotateTowards(
-                    transform.rotation, rot, agent.angularSpeed * Time.deltaTime);
+                transform.rotation = Quaternion.RotateTowards(transform.rotation, rot, agent.angularSpeed * Time.deltaTime);
             }
+        }
+
+        if (Stuck())
+        {
+            Vector3 jitter = URandom.insideUnitSphere * 2.5f; jitter.y = 0f;
+            Vector3 cand = _goalBase + jitter;
+            if (NavMesh.SamplePosition(cand, out var hit, 3f, NavMesh.AllAreas))
+            { SetGoal(hit.position); SetDestinationSafe(hit.position); _stuckTimer = 0f; }
         }
     }
 
-    Transform GetNearestPOI(Vector3 from)
+    void SetGoal(Vector3 baseTarget) { _goalBase = TrySampleSafe(baseTarget, out var s) ? s : baseTarget; _hasGoal = true; _nextRepathAt = 0f; }
+    bool Arrived(Vector3 goal) => Vector3.Distance(transform.position, goal) <= goalArriveTolerance;
+    bool Stuck() => _stuckTimer >= stuckSeconds;
+
+    void Face(Vector3 worldPos, float maxDeg)
     {
-        if (generatorPOIs == null || generatorPOIs.Length == 0) return null;
-        float best = float.PositiveInfinity;
-        Transform bestT = null;
-        foreach (var t in generatorPOIs)
+        Vector3 look = worldPos - transform.position; look.y = 0f;
+        if (look.sqrMagnitude > EPS)
+        { var rot = Quaternion.LookRotation(look); transform.rotation = Quaternion.RotateTowards(transform.rotation, rot, maxDeg); }
+    }
+
+    // ───────────── Common utils ─────────────
+    Transform GetNearestPOI(Vector3 from, bool includeExit)
+    {
+        float best = float.PositiveInfinity; Transform bestT = null;
+        void scan(Transform[] arr) { if (arr == null) return; foreach (var t in arr) { if (!t) continue; float d = (t.position - from).sqrMagnitude; if (d < best) { best = d; bestT = t; } } }
+        scan(generatorPOIs); if (includeExit) scan(exitPOIs); return bestT;
+    }
+
+    Vector3 PickPatrolTarget()
+    {
+        if (URandom.value < poiPriority)
         {
-            if (!t) continue;
-            float d = (t.position - from).sqrMagnitude;
-            if (d < best) { best = d; bestT = t; }
+            if (TryPickRandomValidPoint(generatorPOIs, out var p)) return p;
+            if (TryPickRandomValidPoint(exitPOIs, out var e)) return e;
         }
-        return bestT;
+        if (TryPickRandomValidPoint(wanderPoints, out var w)) return w;
+        return RandomPointInRadius();
+    }
+
+    Vector3 RandomPointInRadius()
+    {
+        Vector3 c = patrolCenter ? patrolCenter.position : transform.position;
+        for (int i = 0; i < patrolRandomSamples; i++)
+        {
+            Vector3 cand = c + URandom.insideUnitSphere * patrolRadius; cand.y = c.y;
+            if (NavMesh.SamplePosition(cand, out var hit, 2.5f, NavMesh.AllAreas))
+            { if (!IsNearWall(hit.position)) return hit.position; }
+        }
+        return c;
+    }
+
+    bool TryPickRandomValidPoint(Transform[] points, out Vector3 pos)
+    {
+        pos = default; if (points == null || points.Length == 0) return false;
+        int tries = Mathf.Min(12, points.Length);
+        for (int k = 0; k < tries; k++)
+        { var t = points[URandom.Range(0, points.Length)]; if (!t) continue; if (TrySampleSafe(t.position, out var s)) { pos = s; return true; } }
+        return false;
     }
 
     bool TrySampleSafe(Vector3 p, out Vector3 safe)
     {
         safe = p;
         if (NavMesh.SamplePosition(p, out var hit, 2.0f, NavMesh.AllAreas))
-        {
-            if (!IsNearWall(hit.position)) { safe = hit.position; return true; }
-        }
+        { if (!IsNearWall(hit.position)) { safe = hit.position; return true; } }
         return false;
     }
 
-    bool TryGetNearestValidPoint(Transform[] points, Vector3 from, out Vector3 pos)
-    {
-        pos = Vector3.zero;
-        if (points == null || points.Length == 0) return false;
+    bool IsNearWall(Vector3 p) => Physics.CheckSphere(p + Vector3.up * 0.4f, wallClearance, occlusionMask, QueryTriggerInteraction.Ignore);
 
-        float best = float.PositiveInfinity;
-        Vector3 bestPos = Vector3.zero;
-        foreach (var t in points)
-        {
-            if (!t) continue;
-            if (TrySampleSafe(t.position, out var s))
-            {
-                float d = (s - from).sqrMagnitude;
-                if (d < best) { best = d; bestPos = s; }
-            }
-        }
-        if (best < float.PositiveInfinity) { pos = bestPos; return true; }
-        return false;
-    }
-
-    bool TryPickRandomValidPoint(Transform[] points, out Vector3 pos)
-    {
-        pos = Vector3.zero;
-        if (points == null || points.Length == 0) return false;
-
-        int tries = Mathf.Min(points.Length, 12);
-        for (int k = 0; k < tries; k++)
-        {
-            var t = points[Random.Range(0, points.Length)];
-            if (!t) continue;
-            if (TrySampleSafe(t.position, out var s)) { pos = s; return true; }
-        }
-        return false;
-    }
-
-    // 벽 이격 체크
-    bool IsNearWall(Vector3 p)
-    {
-        return Physics.CheckSphere(p + Vector3.up * 0.4f, patrolMinClearance, occlusionMask, QueryTriggerInteraction.Ignore);
-    }
-
-    Vector3 PickPatrolTarget()
-    {
-        bool havePOI   = (generatorPOIs != null && generatorPOIs.Length > 0);
-        bool choosePOI = havePOI && (Random.value < patrolPoiRatio);
-
-        if (choosePOI)
-        {
-            if (TryPickRandomValidPoint(generatorPOIs, out var pos)) return pos;
-        }
-        if (TryPickRandomValidPoint(wanderPoints, out var pos2)) return pos2;
-
-        return RandomPointInPatrolArea();
-    }
-
-    Vector3 RandomPointInPatrolArea()
-    {
-        Vector3 c = patrolCenter ? patrolCenter.position : _spawnPoint;
-        for (int i = 0; i < patrolRandomSamples; i++)
-        {
-            Vector3 cand = c + Random.insideUnitSphere * patrolRadius; cand.y = c.y;
-            if (NavMesh.SamplePosition(cand, out var hit, 2.5f, NavMesh.AllAreas))
-            {
-                if (!IsNearWall(hit.position)) return hit.position;
-            }
-        }
-        return c;
-    }
-
-    void SetDestination(Vector3 world)
+    void SetDestinationSafe(Vector3 world)
     {
         if (NavMesh.SamplePosition(world, out var hit, 2f, NavMesh.AllAreas))
         {
@@ -798,59 +570,49 @@ public class MLMonsterAgent : Agent, IAIMonsterHearing, IMonsterStatus
         }
     }
 
-    Vector3 SampleNav(Vector3 world) =>
-        NavMesh.SamplePosition(world, out var hit, 3f, NavMesh.AllAreas) ? hit.position : world;
+    Vector3 SampleNav(Vector3 world) => NavMesh.SamplePosition(world, out var hit, 3f, NavMesh.AllAreas) ? hit.position : world;
 
     float GetPathLength(Vector3 start, Vector3 end)
     {
         if (!NavMesh.SamplePosition(start, out var s, 2f, NavMesh.AllAreas) ||
-            !NavMesh.SamplePosition(end,   out var e, 2f, NavMesh.AllAreas))
-            return 9999f;
-
+            !NavMesh.SamplePosition(end,   out var e, 2f, NavMesh.AllAreas)) return 9999f;
         var path = new NavMeshPath();
         NavMesh.CalculatePath(s.position, e.position, NavMesh.AllAreas, path);
         if (path.status != NavMeshPathStatus.PathComplete) return 9999f;
-
-        float len = 0f;
-        for (int i = 1; i < path.corners.Length; i++)
-            len += Vector3.Distance(path.corners[i - 1], path.corners[i]);
-        return len;
+        float len = 0f; for (int i = 1; i < path.corners.Length; i++) len += Vector3.Distance(path.corners[i - 1], path.corners[i]); return len;
     }
 
-    void UpdateAnimatorFlags(bool chasing, bool investigating)
+    bool LineOfSightClear(Vector3 from, Vector3 to, LayerMask mask)
     {
-        if (!anim) return;
-        float spd = agent ? agent.velocity.magnitude : 0f;
-        if (_hasSpeed)       anim.SetFloat(speedParam, spd);
-        if (_hasChase)       anim.SetBool(chaseBool, chasing);
-        if (_hasInvestigate) anim.SetBool(investigateBool, investigating);
+        Vector3 dir = to - from; float dist = dir.magnitude; if (dist <= 0.001f) return true; dir /= dist;
+        return !Physics.Raycast(from, dir, dist, mask, QueryTriggerInteraction.Ignore);
     }
 
-    // ── Chase 래치 & Mode 내보내기 ──
-    bool HasChaseSignal(bool iSeePlayer, bool hasRecentNoise)
+    bool CanSeePlayer(out Vector3 pos)
     {
-        if (iSeePlayer) return true;
-        if (Time.time - lastSeenPlayerTime < chaseMemoryTime) return true;
-        if (hasRecentNoise && Vector3.Distance(transform.position, lastHeardPos) <= chaseNoiseMaxDistance) return true;
-        return false;
+        pos = Vector3.zero; if (!player) return false;
+        Vector3 target = player.position;
+        Vector3 v = target - eye.position;
+        if (v.magnitude > viewDistance) return false;
+        Vector3 flat = v; flat.y = 0f; Vector3 f = transform.forward; f.y = 0f;
+        if (Vector3.Angle(f, flat) > viewHalfAngle) return false;
+        if (!LineOfSightClear(eye.position, target, occlusionMask)) return false;
+        pos = target; return true;
     }
 
-    void UpdateExportMode(bool iSeePlayer, bool hasRecentNoise, HL hl, float dt)
+    bool PlayerSeesPoint(Vector3 worldPoint)
     {
-        bool rawIntent = (Mode == MonsterMode.Chase || hl == HL.Chase || hl == HL.Ambush);
-        bool signal    = HasChaseSignal(iSeePlayer, hasRecentNoise);
-        bool tooFar    = player ? Vector3.Distance(transform.position, player.position) > chaseMaxExportDistance : true;
-
-        if (rawIntent && signal && !tooFar)
-        {   chaseOnTimer  += dt; chaseOffTimer = 0f; if (!chaseLatched && chaseOnTimer >= chaseAcquireTime) chaseLatched = true; }
-        else
-        {   chaseOnTimer   = 0f; chaseOffTimer += dt; if (chaseLatched && chaseOffTimer >= chaseReleaseTime) chaseLatched = false; }
-
-        if (hitIdleTimer > 0f)                SetMode(MonsterMode.HitIdle);
-        else if (chaseLatched)                SetMode(MonsterMode.Chase);
-        else if (Mode == MonsterMode.Stalk)   SetMode(MonsterMode.Stalk);
-        else if (Mode == MonsterMode.Investigate) { /* 그대로 */ }
-        else if (Mode == MonsterMode.Ambush)  { /* 그대로 */ }
-        else if (Mode == MonsterMode.Patrol)  { /* 그대로 */ }
+        if (!player) return false;
+        Transform pEye = playerEye ? playerEye : player;
+        Vector3 v = worldPoint - pEye.position; float d = v.magnitude;
+        if (d > playerViewDistance) return false;
+        Vector3 flat = v; flat.y = 0f;
+        if (flat.sqrMagnitude <= EPS) return true;
+        Vector3 pf = pEye.forward; pf.y = 0f;
+        if (Vector3.Angle(pf, flat.normalized) > playerViewHalfAngle) return false;
+        var mask = (playerOcclusionMask.value == 0 ? occlusionMask : playerOcclusionMask);
+        return LineOfSightClear(pEye.position, worldPoint, mask);
     }
+
+    bool PlayerCanSeeMe() => PlayerSeesPoint(transform.position);
 }

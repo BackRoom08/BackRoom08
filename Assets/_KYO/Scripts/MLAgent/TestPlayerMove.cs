@@ -1,4 +1,8 @@
-// TestPlayerMove.cs — RunObj 앵커까지 무조건 달리기 (도착 전 중단 X) + enum 기반 추격 감지
+// TestPlayerMove.cs — 도망 트리거 보정:
+// 1) 도착 시에는 "추격 중"만으로는 다시 도망 가지 않음.
+//    → 추격 중 AND (시야 내 OR 근접) 일 때만 연속 도망.
+// 2) 평소엔 근접/시야만으로도 도망 시작(즉시 위협 회피).
+
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
@@ -15,9 +19,9 @@ public class TestPlayerMove : MonoBehaviour
     public Transform monster;
 
     [Header("Monster Status (Enum)")]
-    [Tooltip("IMonsterStatus 구현 컴포넌트(예: MonsterStatusRelay)를 Drag&Drop")]
-    public MonoBehaviour monsterStatusSource; // IMonsterStatus를 구현해야 함
-    IMonsterStatus _monsterStatus;            // 캐시
+    [Tooltip("IMonsterStatus 구현 컴포넌트(예: MLMonsterAgent)를 Drag&Drop")]
+    public MonoBehaviour monsterStatusSource;
+    IMonsterStatus _monsterStatus;
 
     [Header("Speeds")]
     public float walkSpeed = 2f;
@@ -25,8 +29,8 @@ public class TestPlayerMove : MonoBehaviour
     public float turnSpeed = 540f;
 
     [Header("Flee Triggers")]
-    public float nearFleeRadius = 10f;          // 거리 10m 이내면 도망
-    public float seeFleeViewDist = 20f;         // 플레이어 시야 20m
+    public float nearFleeRadius = 10f;          // 근접 판정
+    public float seeFleeViewDist = 20f;         // 시야 거리
     [Range(0,180f)] public float playerFOVHalfAngle = 70f;
     public LayerMask playerObstacleMask;
 
@@ -43,11 +47,10 @@ public class TestPlayerMove : MonoBehaviour
     public float workSnapAngle = 90f;
 
     [Header("Flee Silence")]
-    public float fleeSilenceDelay = 3.0f;       // Flee 시작 3초 뒤 소리 끔
+    public float fleeSilenceDelay = 3.0f;
 
     [Header("Run Anchors (RunObj)")]
-    [Tooltip("런 앵커들을 담은 부모(자식 스피어들을 자동 수집)")]
-    public Transform runObj;
+    public Transform runObj;                     // 도망 목적지 후보들
     public float anchorArriveTol = 0.9f;
 
     [Header("Anti-Trap")]
@@ -83,7 +86,6 @@ public class TestPlayerMove : MonoBehaviour
         _agent.autoRepath = true;
         _agent.stoppingDistance = Mathf.Max(0.1f, interactRadius * 0.6f);
 
-        // IMonsterStatus 캐시
         _monsterStatus = monsterStatusSource as IMonsterStatus;
         if (_monsterStatus == null && monsterStatusSource != null)
             Debug.LogWarning($"{name}: monsterStatusSource는 IMonsterStatus를 구현해야 합니다.");
@@ -113,15 +115,15 @@ public class TestPlayerMove : MonoBehaviour
     {
         float dt = Time.deltaTime;
 
-        // ── Flee 트리거 (enum 기반) ──
-        bool chasing = IsMonsterChasing(); // ★ 이넘으로 판정
-        bool mustFlee = chasing;
-        if (!mustFlee && monster)
-        {
-            float dist = Vector3.Distance(transform.position, monster.position);
-            if (dist <= nearFleeRadius) mustFlee = true;
-            else if (PlayerSeesMonster()) mustFlee = true;
-        }
+        // ── 위협 판정 ──
+        bool dangerNearOrSeen = NearOrSeen();         // 근접 OR 시야
+        bool chasing          = IsMonsterChasing();   // 몬스터 외부 상태(Chase 래치)
+
+        // ▶ 도망 시작 조건
+        //    - 근접/시야 위협이면 즉시 도망
+        //    - (원한다면) chasing && NearOrSeen 만으로 제한하려면 아래 한 줄로 바꿔도 됨.
+        //      bool mustFlee = chasing && dangerNearOrSeen;
+        bool mustFlee = dangerNearOrSeen;
 
         if (State != MoveState.Flee && mustFlee)
         {
@@ -131,7 +133,6 @@ public class TestPlayerMove : MonoBehaviour
 
             if (TryPushOffWall(out var push)) SetDestinationOnNavMesh(push);
 
-            // ★ RunObj 앵커 중 하나 선택
             _currentAnchor = PickAnchor(chasing, excludeIndex: _lastAnchorIndex);
             if (_currentAnchor == null)
             {
@@ -147,7 +148,6 @@ public class TestPlayerMove : MonoBehaviour
             State = MoveState.Flee;
         }
 
-        // Flee 중에는 앵커 도착 전 중단하지 않음
         if (State == MoveState.Flee) FleeTick(dt);
         else                         BrainWork(dt);
 
@@ -157,14 +157,7 @@ public class TestPlayerMove : MonoBehaviour
         UpdateAnimator();
     }
 
-    bool IsMonsterChasing()
-    {
-        // MLMonsterAgent가 IMonsterStatus를 구현하므로 그대로 읽으면 됨
-        return _monsterStatus != null && _monsterStatus.Mode == MonsterMode.Chase;
-    }
-
-    
-    // ─────────────────────────────────────────────
+    // ── 도망 상태 틱 ──
     void FleeTick(float dt)
     {
         if (!_muteNoise && Time.time - _fleeEnterTime >= fleeSilenceDelay)
@@ -176,11 +169,21 @@ public class TestPlayerMove : MonoBehaviour
         if (movingSlow && farFromDest) _stuckTimer += dt; else _stuckTimer = 0f;
         if (_stuckTimer >= stuckCheckTime) { _stuckTimer = 0f; HopToAnotherAnchor(); }
 
-        // 앵커 도착 후 처리
+        // ▶ 도착 시 판정 변경:
+        //    예전: IsMonsterChasing() 이면 무조건 다음 앵커로 도망
+        //    지금: 추격 중 AND (시야 OR 근접) 일 때만 계속 도망, 아니면 복귀
         if (AtFleeGoal())
         {
-            if (IsMonsterChasing()) HopToAnotherAnchor(); // 계속 추격 중이면 다음 앵커
-            else { _muteNoise = false; State = MoveState.Scan; } // 아니면 복귀
+            if (IsMonsterChasing() && NearOrSeen())
+            {
+                HopToAnotherAnchor();
+            }
+            else
+            {
+                _muteNoise = false;
+                State = MoveState.Scan;
+                _currentAnchor = null;
+            }
         }
 
         CallNoise(_muteNoise ? CharacterMoveState.Idle : CharacterMoveState.Run);
@@ -209,6 +212,7 @@ public class TestPlayerMove : MonoBehaviour
         }
     }
 
+    // ── 일반 두뇌(발전기 찾기/배회) ──
     void BrainWork(float dt)
     {
         _searchTimer -= dt;
@@ -272,7 +276,6 @@ public class TestPlayerMove : MonoBehaviour
         return best;
     }
 
-    // 앵커가 없을 때: 간단한 반대방향 포인트(안티트랩 보정)
     Vector3 ComputeSimpleFleePoint()
     {
         if (!monster) return transform.position;
@@ -321,7 +324,7 @@ public class TestPlayerMove : MonoBehaviour
         if (_workLookTimer <= 0f)
         {
             _workLookTimer = workLookInterval;
-            _workTargetYaw = Mathf.Repeat(transform.eulerAngles.y + workSnapAngle, 360f); // 90°
+            _workTargetYaw = Mathf.Repeat(transform.eulerAngles.y + workSnapAngle, 360f);
         }
 
         float curYaw = transform.eulerAngles.y;
@@ -347,20 +350,31 @@ public class TestPlayerMove : MonoBehaviour
         anim.SetBool("Walk", (State == MoveState.Walk || State == MoveState.Scan) && moving);
     }
 
-    // ── LOS & Helpers ──
-    bool PlayerSeesMonster()
+    // ── 위협 판정 유틸 ──
+    bool IsMonsterChasing()
+    {
+        return _monsterStatus != null && _monsterStatus.Mode == MonsterMode.Chase;
+    }
+
+    bool NearOrSeen()
     {
         if (!monster || !playerEye) return false;
 
+        // 거리
+        if (DistanceToMonster() <= nearFleeRadius) return true;
+
+        // 시야
         Vector3 from = playerEye.position;
         Vector3 to   = monster.position;
         Vector3 v    = to - from;
 
         if (v.magnitude > seeFleeViewDist) return false;
-        Vector3 fwd = playerEye.forward; fwd.y = 0f;
+
+        Vector3 fwd  = playerEye.forward; fwd.y = 0f;
         Vector3 flat = v; flat.y = 0f;
         if (Vector3.Angle(fwd, flat) > playerFOVHalfAngle) return false;
 
+        // 가림물 체크(맞으면 위협 아님)
         if (Physics.Raycast(from, v.normalized, out var hit, seeFleeViewDist, playerObstacleMask))
             return false;
 
@@ -424,7 +438,7 @@ public class TestPlayerMove : MonoBehaviour
 
     void CallNoise(CharacterMoveState st)
     {
-        if (_muteNoise) return; // Flee 3초 후 무음
+        if (_muteNoise) return;
         if (noise != null) noise.SetState(st);
     }
 
