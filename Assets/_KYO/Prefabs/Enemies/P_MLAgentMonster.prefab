@@ -57,7 +57,7 @@ MonoBehaviour:
   eye: {fileID: 4593363246481872050}
   occlusionMask:
     serializedVersion: 2
-    m_Bits: 3711
+    m_Bits: 64
   playerEye: {fileID: 0}
   playerOcclusionMask:
     serializedVersion: 2
@@ -70,11 +70,11 @@ MonoBehaviour:
   playerViewDistance: 20
   playerViewHalfAngle: 60
   normalRunSpeed: 4
-  buffedRunSpeed: 6
   rotateSpeed: 180
   catchDistance: 1.4
   episodeTime: 80
   pathEvalInterval: 0.5
+  useActionMask: 1
   goalRetargetDistance: 3.5
   goalArriveTolerance: 0.8
   minRepathInterval: 0.4
@@ -83,22 +83,14 @@ MonoBehaviour:
   stuckSeconds: 1
   hlMinHoldSeconds: 1
   nearOffsetCutoffDist: 2
-  chaseAcquireTime: 0.3
-  chaseReleaseTime: 0.6
-  chaseNoiseMaxDistance: 8
-  chaseMaxExportDistance: 45
-  noStimulusPatrolTime: 2
-  _hlMode: 0
-  _exportMode: 0
-  stareStillRequiredSeconds: 2
-  stillSpeedThreshold: 0.05
-  stareStackPerSec: 1
-  stareStackThreshold: 30
-  buffDuration: 40
-  ambushLeadSeconds: 1.5
+  chaseStickSeconds: 1.5
+  memoryNoiseSeconds: 6
+  memorySightSeconds: 4
+  noiseSmoothTime: 0.25
   investigateRadius: 30
   investigateSweepCount: 2
   sweepMinRadius: 12
+  investigateHoldTime: 2
   patrolCenter: {fileID: 0}
   patrolRadius: 30
   poiPriority: 0.7
@@ -106,12 +98,9 @@ MonoBehaviour:
   wallClearance: 0.6
   anim: {fileID: 8540056168888499148}
   speedParam: Speed
-  isChasingParam: IsChasing
-  isInvestigateParam: IsInvestigate
+  _curMode: 0
   playerSpeedNormMax: 7
-  noiseSmoothTime: 0.25
   localMoveRadius: 3
-  debugNav: 1
 --- !u!114 &1462145742788604162
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -164,11 +153,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 14
+    VectorObservationSize: 12
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 2
-      BranchSizes: 06000000
+      BranchSizes: 05000000
     VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 1
