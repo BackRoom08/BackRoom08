@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,7 +6,7 @@ public class NextStageTrigger : MonoBehaviour, IInteractable
 {
     public void Interact()
     {
-        SceneLoader.Instance.LoadSceneAdditive("Stage1", true);
+        SceneLoader.Instance.LoadSceneAdditive("Stage4", true);
     }
 }
 
