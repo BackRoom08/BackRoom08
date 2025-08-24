@@ -29,8 +29,9 @@ public class EnemyController : MonoBehaviour
     protected enum State { Idle,
         Walk,
         Chase,
-        Wait 
-    }  // Idle : 멈춤, Walk : 걷기, Chase : 추격, Wait : 기다림
+        Wait,
+        Meet
+    }  // Idle : 멈춤, Walk : 걷기, Chase : 추격, Wait : 기다림, Meet : 조우
     [SerializeField]protected State currState = State.Idle;  // 현재 상태
     protected Coroutine stateRoutine;   // 코루틴 값
     protected float curSpeed = 0f; // agent로 이동하는 현재 속도
@@ -76,15 +77,18 @@ public class EnemyController : MonoBehaviour
                 switch (newState) //사운드 제어에 사용할 공간
         {
             case State.Idle:
-
-            case State.Wait:
                 noise?.SetState(CharacterMoveState.Idle);
                 break;
+            case State.Wait:
+                
             case State.Walk:
                 noise?.SetState(CharacterMoveState.Walk);
                 break;
             case State.Chase:
                 noise?.SetState(CharacterMoveState.Chase);
+                break;
+            case State.Meet:
+                noise?.SetState(CharacterMoveState.Meet);
                 break;
         }
 
@@ -106,6 +110,9 @@ public class EnemyController : MonoBehaviour
                 stateRoutine = StartCoroutine(WaitRoutine());
                 //print("wait");
                 break;
+            case State.Meet:
+                stateRoutine = StartCoroutine(MeetRoutine());
+                break;
         }
     }
     
@@ -117,6 +124,15 @@ public class EnemyController : MonoBehaviour
         yield return new WaitForSeconds(idleDuration);
         ChangeState(State.Walk);
 
+    }
+
+    // 조우 상태
+    protected virtual IEnumerator MeetRoutine()
+    {
+        agent.isStopped = true;
+        animator.SetFloat("Speed", 0);
+        yield return new WaitForSeconds(1f);
+        ChangeState(State.Chase);
     }
 
     // 배회(걷기) 상태
@@ -240,15 +256,18 @@ public class EnemyController : MonoBehaviour
         isPlayerInHide = isDetected;
         if (isDetected)
         {
-            lastPlayerPosition = player.position;
+            Vector3 directionToPlayer = player.position - transform.position;
+            directionToPlayer.y = 0; // Keep it on the horizontal plane
+            directionToPlayer.Normalize();
+            lastPlayerPosition = player.position - (directionToPlayer * lastPosArriveThreshold);
             agent.SetDestination(lastPlayerPosition);
             chaseRange = 0f;
-            // 추격 중이면 Wait 상태로 변경
-            if (currState == State.Chase)
-            {
+            // 추격 중이면 Wait 상태로 변경dho 
+            //if (currState == State.Chase) 조건 제거
+            //{
                 // agent.SetDestination(lastPlayerPosition);
                 ChangeState(State.Wait);
-            }
+            //}
         }
         else
         {
