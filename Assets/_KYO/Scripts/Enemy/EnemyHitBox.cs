@@ -18,7 +18,7 @@ public class EnemyHitBox : MonoBehaviour
             if (status != null)
             {
                 status.HealMentalHP(-mentalDamage);
-                Debug.Log($"정신력 {mentalDamage} 감소!");
+               // Debug.Log($"정신력 {mentalDamage} 감소!");
 
                 if (status.currentMentalHP <= 0)
                 {

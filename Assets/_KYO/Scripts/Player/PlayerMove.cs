@@ -63,9 +63,7 @@ public class PlayerMove : MonoBehaviour
         
         if (Input.GetKeyDown(KeyCode.LeftControl))
         { //앉고 일어나기
-            isCrouch = !isCrouch;
-            //Debug.Log("앉기키 작동");
-            
+            isCrouch = !isCrouch;            
             noise.SetState(CharacterMoveState.Crouch);
             //print("player Crouch");
             

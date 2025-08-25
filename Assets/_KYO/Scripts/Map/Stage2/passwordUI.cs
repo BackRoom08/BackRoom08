@@ -124,7 +124,6 @@ public class PasswordUI : MonoBehaviour
         //    if (virtualCamTransform != null)
         //    {
         //        cameraControllerObject = virtualCamTransform.gameObject;
-        //        Debug.Log(" VirtualCamera 연결 완료");
         //    }
         //}
 
@@ -137,7 +136,6 @@ public class PasswordUI : MonoBehaviour
         if (currentInput.Length < digitTexts.Length)
         { //최대 4자리 까지입력 (4자리보더 적을때만 추가 가능 )
             currentInput += number; //입력숫자를 currentInput에저장
-            Debug.Log($"{number} 누름");
             UpdateDisplay(); //저장된 숫자를 UI에 표시
         }
     }
@@ -164,7 +162,6 @@ public class PasswordUI : MonoBehaviour
         {
             if (enteredPW == correctPW) //정답비교
             {
-                Debug.Log("통과");
                 cameraControllerObject.SetActive(true);
                 passwordUI.SetActive(false);
                 Cursor.lockState = CursorLockMode.Locked;
@@ -180,9 +177,7 @@ public class PasswordUI : MonoBehaviour
             }
             else
             {
-                Debug.Log("오답");
-            }
-            //ClosePasswordUI();
+            }           
         }
     }
 

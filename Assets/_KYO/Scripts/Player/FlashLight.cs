@@ -164,7 +164,6 @@ public class FlashLight : MonoBehaviour
             if (enemy != null)
             {
                 enemy.OnFlashHit(); // 적 기절 처리
-                Debug.Log("으악 내눈!");
             }
         }
     }

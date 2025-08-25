@@ -164,7 +164,7 @@ public class EnemyEyeLightMob : EnemyController
         MapManager mapManager = FindObjectOfType<MapManager>();
         if (mapManager == null)
         {
-            Debug.LogError("Scene에 MapManager가 없습니다!");
+         //   Debug.LogError("Scene에 MapManager가 없습니다!");
             yield break; // MapManager가 없으면 코루틴 중단
         }
 
@@ -206,6 +206,6 @@ public class EnemyEyeLightMob : EnemyController
         yield return new WaitForSeconds(attackAnimationDuration);
 
         UIManager.Instance.ShowDeathUI();
-        Debug.Log("게임 오버 부분 붙여서 넣기 !");
+     //   Debug.Log("게임 오버 부분 붙여서 넣기 !");
     }
 }

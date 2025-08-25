@@ -25,7 +25,5 @@ public class MoveStage3 : MonoBehaviour
         // Stage3 씬 로드
         SceneLoader.Instance.LoadSceneAdditive("Stage3", true);
         yield return new WaitUntil(() => SceneManager.GetSceneByName("Stage3").isLoaded);
-
-        Debug.Log("Stage3 씬 로드 완료");
     }
 }

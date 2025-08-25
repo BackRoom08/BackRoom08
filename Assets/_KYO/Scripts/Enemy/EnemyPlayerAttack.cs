@@ -65,7 +65,7 @@ public class EnemyPlayerAttack : MonoBehaviour
         MapManager mapManager = FindObjectOfType<MapManager>();
         if (mapManager == null)
         {
-            Debug.LogError("Scene에 MapManager가 없습니다!");
+           // Debug.LogError("Scene에 MapManager가 없습니다!");
             yield break; // MapManager가 없으면 코루틴 중단
         }
 
@@ -132,7 +132,7 @@ public class EnemyPlayerAttack : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("카메라를 못찾는다");
+          //  Debug.LogWarning("카메라를 못찾는다");
         }
 
         // 렌즈 왜곡 효과 추가
@@ -157,9 +157,6 @@ public class EnemyPlayerAttack : MonoBehaviour
         //  애니메이션 시간만큼 대기
         yield return new WaitForSeconds(attackAnimationDuration);
 
-        UIManager.Instance.ShowDeathUI();
-        Debug.Log("게임 오버 부분 붙여서 넣기 !");
-    
-
+        UIManager.Instance.ShowDeathUI();   
     }
 }
