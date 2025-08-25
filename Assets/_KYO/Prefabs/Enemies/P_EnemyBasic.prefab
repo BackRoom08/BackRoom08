@@ -71,15 +71,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   player: {fileID: 0}
-  chaseRange: 25
-  walkSpeed: 2
-  runSpeed: 6
+  chaseRange: 27
+  walkSpeed: 3
+  runSpeed: 5.5
   idleDuration: 1.5
   walkDuration: 10
   minMoveRange: 10
   maxMoveRange: 30
-  angularSpeed: 500
-  acceleration: 25
+  angularSpeed: 300
+  acceleration: 20
   waitLastPosition: 0.2
   lastPosArriveThreshold: 1
   isPlayerInHide: 0
