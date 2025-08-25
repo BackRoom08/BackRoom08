@@ -5,14 +5,33 @@ using UnityEngine;
 // 기본몹
 public class EnemyBasicMob : EnemyController
 {
+    [Header("조우소리 설정")]
+    [SerializeField, Tooltip("일회성 사운드 재생용")] protected AudioSource oneShotAudioSource;
+    [SerializeField, Tooltip("조우 시 사운드")] protected AudioClip meetClip;
+
     private bool isChasing; // 추격
-    
+
+    protected override void Awake()
+    {
+        base.Awake();
+        if (oneShotAudioSource)
+        {
+            // UIManager에서 SFX 믹서 그룹을 가져옴
+            if (UIManager.Instance != null && UIManager.Instance.sfxGroup != null)
+            {
+                oneShotAudioSource.outputAudioMixerGroup = UIManager.Instance.sfxGroup;
+            }
+        }
+    }
+
     protected override void OnChasePlayer()
     {
         if (!isChasing)
         {
-            // 예시: 사운드 재생 (한 번만)
-            // AudioManager.Play("EnemyChase");
+            if (meetClip != null && oneShotAudioSource != null)
+            {
+                oneShotAudioSource.PlayOneShot(meetClip);
+            }
             isChasing = true;
         }
     }
@@ -20,7 +39,7 @@ public class EnemyBasicMob : EnemyController
     protected override IEnumerator ChaseRoutine()
     {
         isChasing = false; // 추격 시작마다 리셋
-        yield return base.ChaseRoutine();
+        return base.ChaseRoutine();
     }
 
     protected virtual void OnEnable()
@@ -32,4 +51,4 @@ public class EnemyBasicMob : EnemyController
             player = playerObject.transform;
         }
     }
-    }
+}

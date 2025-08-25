@@ -2,6 +2,8 @@
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.SceneManagement;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 
 [RequireComponent(typeof(NavMeshAgent))]
@@ -75,12 +77,34 @@ public class EnemyPlayerAttack : MonoBehaviour
         playerObject.GetComponent<PlayerMove>().enabled = false;
         playerObject.GetComponent<ItemPickUp>().enabled = false;
         
+        // 플레이어의 AudioSource 비활성화
+        AudioSource playerAudioSource = playerObject.GetComponent<AudioSource>();
+        if (playerAudioSource != null)
+        {
+            playerAudioSource.enabled = false;
+        }
+
+        // 플레이어의 Animator 비활성화
+        Animator playerAnimator = playerObject.GetComponent<Animator>();
+        if (playerAnimator != null)
+        {
+            playerAnimator.enabled = false;
+        }
+
         var cameraScript = playerObject.GetComponentInChildren<NewBehaviourScript>();
         if (cameraScript != null) cameraScript.enabled = false;
 
         // AI 비활성화
         agent.enabled = false; 
-        if (mainAiScript != null) mainAiScript.enabled = false;
+        if (mainAiScript != null)
+        {
+            // OnDetected켜버려서 chase상태 변경시키기
+            if (mainAiScript is EnemyController enemyController) 
+            {
+                enemyController.OnDetected(true);
+            }
+            mainAiScript.enabled = false;
+        }
 
         // 데스룸으로 순간이동 , 페이드 인
         transform.position = mapManager.enemyDeadRoomPoints.position;
@@ -93,6 +117,35 @@ public class EnemyPlayerAttack : MonoBehaviour
         if (directionToEnemy != Vector3.zero) // 0 벡터가 아닐 때만 회전 적용 (오류 방지)
         {
             playerObject.transform.rotation = Quaternion.LookRotation(directionToEnemy);
+        }
+
+        // 플레이어 카메라의 X축 회전 초기화 (정면을 바라보도록)
+        // CinemachineVirtualCamera 컴포넌트를 찾아 X축 회전을 0으로 설정
+        Cinemachine.CinemachineVirtualCamera virtualCamera = playerObject.GetComponentInChildren<Cinemachine.CinemachineVirtualCamera>();
+
+        if (virtualCamera != null)
+        {
+            // CinemachineVirtualCamera의 Transform을 직접 조작
+            Vector3 currentEuler = virtualCamera.transform.localEulerAngles;
+            currentEuler.x = 0f; // X축 회전을 0으로 설정하여 정면을 바라보게 함
+            virtualCamera.transform.localEulerAngles = currentEuler;
+        }
+        else
+        {
+            Debug.LogWarning("카메라를 못찾는다");
+        }
+
+        // 렌즈 왜곡 효과 추가
+        if (mapManager.volume.profile.TryGet<LensDistortion>(out var lensDistortion))
+        {
+            lensDistortion.intensity.Override(0.2f);
+            lensDistortion.scale.Override(1.1f);
+        }
+        else
+        {
+            var newLensDistortion = mapManager.volume.profile.Add<LensDistortion>(true);
+            newLensDistortion.intensity.Override(0.2f);
+            newLensDistortion.scale.Override(1.1f);
         }
 
         mapManager.FadeIn(1.5f);

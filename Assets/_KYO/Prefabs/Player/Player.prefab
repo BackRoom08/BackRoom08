@@ -90,7 +90,7 @@ Transform:
   m_GameObject: {fileID: 333322198145001628}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.5, z: 0.3}
+  m_LocalPosition: {x: 0, y: 1.8, z: 0.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -222,7 +222,7 @@ Transform:
   m_GameObject: {fileID: 555784771357538476}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.21, z: -0.055}
+  m_LocalPosition: {x: 0, y: 0, z: -0.055}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -710,7 +710,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   audioSource: {fileID: 0}
-  mixerGroup: {fileID: 0}
   walkClip: {fileID: 8300000, guid: d5c3778edd6f88244a5eff78db0951cb, type: 3}
   breathRunClip: {fileID: 8300000, guid: dfc5e998b9d24864c88c05254bebb8db, type: 3}
   staminaExhaustionClip: {fileID: 8300000, guid: ea990ad4fac7d984b8a38eefe8c40f75,

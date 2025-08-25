@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
@@ -75,6 +75,8 @@ public class StateNoiseEmitter : MonoBehaviour
     }
     
     
+    public AudioSource GetAudioSource() { return audioSource; }
+    
     // SetState 추가 할시 아래 코드 3줄 추가해서 원하는값 대입 필요
     // 1. Enum 값추가
     // 2. AudioClip 변수 추가해서 원하는값 넣기
@@ -128,7 +130,7 @@ public class StateNoiseEmitter : MonoBehaviour
                 currentRangeMul = breathRangeMul;
                 break;
             case CharacterMoveState.Meet:
-                
+                if(enemyMeetPlayerClip) audioSource.PlayOneShot(enemyMeetPlayerClip, soundVolume);
                 break;
 
             case CharacterMoveState.Chase:

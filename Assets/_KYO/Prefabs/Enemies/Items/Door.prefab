@@ -122,6 +122,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   animator: {fileID: 5276069679348501033}
+  isDoorOpen: 0
+  openSound: {fileID: 0}
+  closeSound: {fileID: 0}
 --- !u!1 &5725506841890802348
 GameObject:
   m_ObjectHideFlags: 0

@@ -8,6 +8,11 @@ public class EnemySmilerMob : EnemyController
 {
     [SerializeField] private float chaseDistance = 7f; // 추격 시작 거리
     [SerializeField] private float lostDistance = 15f;  // 플레이어를 놓치는 거리
+
+    [Header("조우소리 설정")]
+    [SerializeField, Tooltip("일회성 사운드 재생용")] protected AudioSource oneShotAudioSource;
+    [SerializeField, Tooltip("조우 시 사운드")] protected AudioClip meetClip;
+
     private bool playerisdead = false;
 
     private bool isChasing = false; // 현재 추격 중인지 여부
@@ -19,9 +24,29 @@ public class EnemySmilerMob : EnemyController
         base.Awake(); // 부모 클래스의 Awake를 호출하여 NavMeshAgent 등을 설정합니다.
         animator = GetComponentInChildren<Animator>(); // 애니메이터를 찾습니다.
         agent.acceleration = 30f; // NavMeshAgent의 가속도를 30으로 설정
+        
+        if (oneShotAudioSource)
+        {
+            // UIManager에서 SFX 믹서 그룹을 가져옴
+            if (UIManager.Instance != null && UIManager.Instance.sfxGroup != null)
+            {
+                oneShotAudioSource.outputAudioMixerGroup = UIManager.Instance.sfxGroup;
+            }
+        }
 
         // 공격 스크립트 컴포넌트를 가져옴
         enemyAttack = GetComponent<EnemyPlayerAttack>();
+    }
+    protected override void OnChasePlayer()
+    {
+        if (!isChasing)
+        {
+            if (meetClip != null && oneShotAudioSource != null)
+            {
+                oneShotAudioSource.PlayOneShot(meetClip);
+            }
+            isChasing = true;
+        }
     }
 
     protected virtual void OnEnable()
