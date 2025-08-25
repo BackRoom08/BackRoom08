@@ -56,7 +56,7 @@ public class ResetGenerator : MonoBehaviour
     {
         // 스택 1 증가
         _stack++;
-        if (_stack >= _gens.Count)
+        if (_stack >= _gens.Count -2)
             Invoke(nameof(ResetAll), resetDelay);
     }
 
