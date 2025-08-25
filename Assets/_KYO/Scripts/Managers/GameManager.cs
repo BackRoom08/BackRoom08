@@ -158,7 +158,7 @@ public class GameManager : MonoBehaviour
         PlayerData.crouchHeight = playerMove.crouchHeight;
         PlayerData.standHeight = playerMove.standHeight;
 
-        // Debug.Log("플레이어 상태 저장 완료");
+        
         SavePlayerDataToFile();
     }
 

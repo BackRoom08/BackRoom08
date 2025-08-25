@@ -199,7 +199,7 @@ public class UIManager : MonoBehaviour
     {
         if (deadPanel == null || deadBgImage == null)
         {
-            Debug.LogError("Dead Panel 또는 Dead BG Image가 UIManager에 할당되지 않았습니다.");
+            //Debug.LogError("Dead Panel 또는 Dead BG Image가 UIManager에 할당되지 않았습니다.");
             return;
         }
         PauseGame();

@@ -19,7 +19,5 @@ public class MoveStage : MonoBehaviour
 
         // Stage2 씬 로드
         SceneLoader.Instance.LoadSceneAdditive("Stage2", true);
-
-        Debug.Log("Stage2 씬 로드 완료");
     }
 }

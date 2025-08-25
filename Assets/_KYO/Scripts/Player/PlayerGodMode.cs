@@ -14,7 +14,7 @@ public class PlayerGodMode : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.F11))
         {
             isGodModeActive = !isGodModeActive;
-            Debug.Log("God Mode " + (isGodModeActive ? "ON" : "OFF"));
+   
         }
 
         if (isGodModeActive)

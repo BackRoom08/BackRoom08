@@ -72,7 +72,7 @@ public class ItemUser : MonoBehaviour
         }
         else
         {
-            Debug.Log("사용할 수 없는 아이템입니다.");
+          //  Debug.Log("사용할 수 없는 아이템입니다.");
         }
     }
 

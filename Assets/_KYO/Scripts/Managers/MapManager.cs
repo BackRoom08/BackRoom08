@@ -36,7 +36,7 @@ public class MapManager : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("UIManager에서 BGM 오디오 믹서 그룹을 찾을 수 없습니다. UIManager가 초기화되었고 bgmGroup이 설정되었는지 확인하세요.");
+          //  Debug.LogWarning("UIManager에서 BGM 오디오 믹서 그룹을 찾을 수 없습니다. UIManager가 초기화되었고 bgmGroup이 설정되었는지 확인하세요.");
         }
     }
 
@@ -49,7 +49,7 @@ public class MapManager : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"MapManager의 {gameObject.name}에 BGM 클립이 할당되지 않았습니다.");
+          //  Debug.LogWarning($"MapManager의 {gameObject.name}에 BGM 클립이 할당되지 않았습니다.");
         }
     }
         

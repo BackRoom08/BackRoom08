@@ -101,12 +101,10 @@ public class PlayerStatus : MonoBehaviour
             {
                 currentMentalHP -= MentalDamage; //코루틴 시간마다 정신력 감소
                 currentMentalHP = Mathf.Max(currentMentalHP, 0); //최소값 0으로 제한
-                Debug.Log("현재 정신력 : " + currentMentalHP);
                 MentalUI();
 
                 if (currentMentalHP <= 0)
                 {
-                    Debug.Log("사망씬 넣어주세요");
                     enemyAttackScript.InitiateAttack(gameObject);
                     
                 }
@@ -141,8 +139,6 @@ public class PlayerStatus : MonoBehaviour
 
         // 사망 UI 표시
         UIManager.Instance.ShowDeathUI();
-
-        Debug.Log("정신력 0으로 데드룸 이동 및 게임 오버 처리");
     }
 
 }
