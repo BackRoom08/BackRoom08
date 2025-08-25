@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -9,6 +9,9 @@ public class ResetGenerator : MonoBehaviour
 
     [Tooltip("모두 완료된 뒤 리셋을 수행하기까지 지연(초). 0이면 즉시 리셋")]
     public float resetDelay = 0f;
+
+    [Tooltip("문을 열기 위한 타임라인 트리거")]
+    public TimeLineStarter doorTrigger;
 
     readonly List<Generator> _gens = new();
     int _stack;  // 완료된 개수(스택)
@@ -54,18 +57,29 @@ public class ResetGenerator : MonoBehaviour
 
     void HandleCompleted(Generator g)
     {
-        // 스택 1 증가
         _stack++;
-        if (_stack >= _gens.Count -2)
+
+        if (_stack >= _gens.Count)
+        {
+            // 문 열기
+            if (doorTrigger != null)
+            {
+                doorTrigger.Interact();
+            }
+
+            // 리셋 예약
             Invoke(nameof(ResetAll), resetDelay);
+        }
+
     }
 
     void ResetAll()
     {
         // 전체 리셋 + 스택 0
-        foreach (var g in _gens)
-            if (g != null) g.ResetGenerator();
-        _stack = 0;
+        //foreach (var g in _gens)
+        //    if (g != null) g.ResetGenerator();
+        //_stack = 0;
+   
     }
 }
 
