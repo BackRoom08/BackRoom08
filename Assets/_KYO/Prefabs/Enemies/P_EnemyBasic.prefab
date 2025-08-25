@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 303267041214708486}
   - component: {fileID: 816432517416350752}
   - component: {fileID: 380585031938568693}
+  - component: {fileID: 1493032061338731873}
   m_Layer: 7
   m_Name: P_EnemyBasic
   m_TagString: Enemy
@@ -321,6 +322,19 @@ MonoBehaviour:
   currentState: 0
   soundState: 1
   loudEnabled: 0
+--- !u!114 &1493032061338731873
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 498024831495219141}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a8ae543bf78b334a8d58e04910168c6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  audioSource: {fileID: 1264818454121533774}
 --- !u!1001 &290644871122758345
 PrefabInstance:
   m_ObjectHideFlags: 0

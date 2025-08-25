@@ -29,6 +29,8 @@ public class ResetGenerator : MonoBehaviour
 
             if (lightListOnOff != null)
                 lightListOnOff.SetLights(true);
+            
+            RenderSettings.fogEndDistance = 30f;
         }
     }
 

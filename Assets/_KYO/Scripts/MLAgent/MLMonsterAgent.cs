@@ -105,7 +105,6 @@ public class MLMonsterAgent : Agent, IMonsterStatus, IAIMonsterHearing
     [Header("Inspector Debug (Runtime)")]
     [SerializeField] MonsterMode modeDebug;                // 현재 모드 미러
     [SerializeField] bool isEmpoweredInspector;            // 강화 여부 미러
-    [SerializeField] float stalkStackInspector;            // “현재 연속” 스택(초) 미러
     [SerializeField] float stalkStackRemainingInspector;   // 강화까지 남은 시간(초) 미러
     [SerializeField] string investigateSubState;           // Investigate 세부 상태 표시
 
@@ -416,7 +415,6 @@ public class MLMonsterAgent : Agent, IMonsterStatus, IAIMonsterHearing
         // ── 인스펙터 디버그 미러링 ──
         modeDebug = CurrentMode;
         isEmpoweredInspector = isEmpowered;
-        stalkStackInspector = stareStack;
         stalkStackRemainingInspector = Mathf.Max(0f, stalkNeed - stareStack);
         if (CurrentMode == MonsterMode.Investigate)
         {

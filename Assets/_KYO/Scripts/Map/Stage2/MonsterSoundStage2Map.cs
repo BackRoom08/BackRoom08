@@ -15,6 +15,10 @@ public class MonsterSoundStage2Map : MonoBehaviour
         audioSource = gameObject.AddComponent<AudioSource>();
         audioSource.spatialBlend = 0f; // 2D 사운드로 전맵에 들리게 설정
         audioSource.playOnAwake = false;
+        if (UIManager.Instance != null && UIManager.Instance.bgmGroup != null)
+        {
+            audioSource.outputAudioMixerGroup = UIManager.Instance.bgmGroup;
+        }
 
         StartCoroutine(PlayMonsterSoundsLoop());
 
