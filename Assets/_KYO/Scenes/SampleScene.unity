@@ -612,7 +612,17 @@ PrefabInstance:
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1490539790}
+      objectReference: {fileID: 886533045}
+    - target: {fileID: 4952261168928670483, guid: 894d0a3a355a3e24f889dffdbb612c1f,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: QuitGame
+      objectReference: {fileID: 0}
+    - target: {fileID: 4952261168928670483, guid: 894d0a3a355a3e24f889dffdbb612c1f,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: UIManager, Assembly-CSharp
+      objectReference: {fileID: 0}
     - target: {fileID: 4957870218758523138, guid: 894d0a3a355a3e24f889dffdbb612c1f,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -823,6 +833,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: PersistentUI
+      objectReference: {fileID: 0}
+    - target: {fileID: 6801151710741094825, guid: 894d0a3a355a3e24f889dffdbb612c1f,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7075835432409710891, guid: 894d0a3a355a3e24f889dffdbb612c1f,
         type: 3}

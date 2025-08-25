@@ -35,6 +35,10 @@ public class MainScene : MonoBehaviour
 
     void OnQuitBtnClick()
     {
-        print("quit");
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
     }
 }

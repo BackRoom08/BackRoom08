@@ -52,11 +52,11 @@ public class EnemySmilerMob : EnemyController
     protected virtual void OnEnable()
     {
         // PlayerMove 컴포넌트를 가진 오브젝트를 찾아 플레이어로 설정
-        PlayerMove playerObject = FindObjectOfType<PlayerMove>();
-        if (playerObject != null)
-        {
-            player = playerObject.transform;
-        }
+        //PlayerMove playerObject = FindObjectOfType<PlayerMove>();
+        //if (playerObject != null)
+        //{
+        //    player = playerObject.transform;
+        //}
 
         // GameObject가 다시 활성화될 때 에이전트가 정지되지 않도록
         if (agent != null)
@@ -144,11 +144,11 @@ public class EnemySmilerMob : EnemyController
 
             if (distance >= 28f)
             {
-                targetSpeed = 8f; // 장거리 최대 속도
+                targetSpeed = 8.2f; // 장거리 최대 속도
             }
             else // distance < 30f
             {
-                targetSpeed = 3.5f; // 근거리 최소 속도
+                targetSpeed = 3.6f; // 근거리 최소 속도
             }
 
             // 속도를 부드럽게 보간
