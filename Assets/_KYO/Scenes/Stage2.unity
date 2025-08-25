@@ -1130,11 +1130,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   monsterSounds:
-  - {fileID: 8300000, guid: f85ad44af422fbb48b4fc6d42814303e, type: 3}
-  - {fileID: 8300000, guid: fdd253a04c4e20449808f3cc171ed825, type: 3}
-  - {fileID: 8300000, guid: c7c2685730985fe41b4a787b869ff0e6, type: 3}
-  - {fileID: 8300000, guid: c3d0ff7fcb86c10449b095ee4e048030, type: 3}
-  - {fileID: 8300000, guid: 8c618a72bb0b64b4cbd5dd559401d333, type: 3}
+  - {fileID: 8300000, guid: 07bf81c896a13d24c995faf8c723c7eb, type: 3}
+  - {fileID: 8300000, guid: 07bf81c896a13d24c995faf8c723c7eb, type: 3}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   MinInterval: 3
   MaxInterval: 6
 --- !u!4 &68918764

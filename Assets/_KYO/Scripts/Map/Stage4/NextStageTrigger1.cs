@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class NextStageTrigger1 : MonoBehaviour, IInteractable
+public class NextStageTrigger1 : MonoBehaviour
 {
-    public void Interact()
+    private void OnTriggerEnter(Collider other)
     {
+        //print("OnCollisionEnter");
         SceneLoader.Instance.LoadSceneAdditive("EndingScene", true);
     }
 }

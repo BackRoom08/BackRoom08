@@ -86,7 +86,7 @@ public class PlayerMove : MonoBehaviour
             //print("player Jump");
         }
 
-        if (Input.GetKeyDown(KeyCode.F1))
+        if (Input.GetKeyDown(KeyCode.Tab))
         {
             UIManager.Instance.ToggleSettings();
         }

@@ -25,6 +25,10 @@ public class Generator : MonoBehaviour
     public event Action<Generator> OnCompleted;
     bool _completedEventSent;
 
+    [SerializeField] private GameObject light;
+    [SerializeField] private ResetGenerator resetGenerator;
+
+
     void Awake()
     {
         noise = GetComponent<StateNoiseEmitter>();
@@ -51,11 +55,15 @@ public class Generator : MonoBehaviour
             // 완료 시 1회만 이벤트 발생
             if (IsCompleted && !_completedEventSent)
             {
+                //print("2차");
                 _completedEventSent = true;
                 IsSoundActive = false;
                 _worker = null;
                 if (noise) noise.SetState(CharacterMoveState.Idle);
                 OnCompleted?.Invoke(this);
+                SetLight(true);
+                if (resetGenerator != null)
+                    resetGenerator.AddStack(this);
             }
             return;
         }
@@ -108,6 +116,13 @@ public class Generator : MonoBehaviour
         if (string.IsNullOrEmpty(allowedTag)) return true;
         return actor != null && actor.CompareTag(allowedTag);
     }
+    
+    public void SetLight(bool isOn)
+    {
+        if (light != null) 
+            light.SetActive(isOn);
+    }
+    
 
 #if UNITY_EDITOR
     void OnDrawGizmos()
