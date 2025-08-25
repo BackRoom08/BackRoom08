@@ -19,9 +19,38 @@ public class MapManager : MonoBehaviour
     // 씬이 바뀌어도 유지되어야 하는 값은 static으로 변경
     public static bool isRestarted = false;
 
+    private AudioSource bgmAudioSource;
+    [Header("BGM Settings")]
+    public AudioClip sceneBGM; // BGM clip for the current scene
+
     private void Awake()
     {
-        
+        bgmAudioSource = gameObject.AddComponent<AudioSource>();
+        bgmAudioSource.loop = true;
+        bgmAudioSource.playOnAwake = false;
+        bgmAudioSource.volume = 0.2f;
+
+        if (UIManager.Instance != null && UIManager.Instance.bgmGroup != null)
+        {
+            bgmAudioSource.outputAudioMixerGroup = UIManager.Instance.bgmGroup;
+        }
+        else
+        {
+            Debug.LogWarning("UIManager에서 BGM 오디오 믹서 그룹을 찾을 수 없습니다. UIManager가 초기화되었고 bgmGroup이 설정되었는지 확인하세요.");
+        }
+    }
+
+    void Start()
+    {
+        if (sceneBGM != null)
+        {
+            bgmAudioSource.clip = sceneBGM;
+            bgmAudioSource.Play();
+        }
+        else
+        {
+            Debug.LogWarning($"MapManager의 {gameObject.name}에 BGM 클립이 할당되지 않았습니다.");
+        }
     }
         
     /// <summary>
