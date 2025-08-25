@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 6706522832578737197}
   m_Layer: 0
   m_Name: Generator
-  m_TagString: Untagged
+  m_TagString: Generator
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -119,12 +119,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 994d02cf67269d745a8187a99c59fa6c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  stepSource: {fileID: 0}
-  breathSource: {fileID: 0}
-  walkClip: {fileID: 8300000, guid: dfd76a2390598fc41827ab42b11a06d7, type: 3}
+  audioSource: {fileID: 0}
+  walkClip: {fileID: 8300000, guid: 39138aee9f2b3b347b23266932f5461c, type: 3}
   breathRunClip: {fileID: 0}
   staminaExhaustionClip: {fileID: 0}
-  masterVolume: 0.5
+  enemyMeetPlayerClip: {fileID: 0}
+  enemyChaseClip: {fileID: 0}
+  soundVolume: 0.5
   baseLoudness: 1
   baseRange: 500
   walkLoudMul: 1
@@ -133,6 +134,7 @@ MonoBehaviour:
   breathRangeMul: 0.75
   currentClip: {fileID: 0}
   currentState: 0
+  soundState: 1
   loudEnabled: 1
 --- !u!114 &6706522832578737197
 MonoBehaviour:

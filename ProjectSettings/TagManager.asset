@@ -9,6 +9,7 @@ TagManager:
   - CutScene
   - Item
   - Enemy
+  - Generator
   layers:
   - Default
   - TransparentFX
