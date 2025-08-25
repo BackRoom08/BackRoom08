@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
@@ -12,7 +12,11 @@ public class SoundMonitor : MonoBehaviour
     {
         mixerGroup = UIManager.Instance.sfxGroup;
         if (mixerGroup != null)
-            audioSource.outputAudioMixerGroup = mixerGroup;
+        { audioSource.outputAudioMixerGroup = mixerGroup; }
+        else
+        {
+            print("오디오클립을 넣어주세요");
+        }
         
     }
     
