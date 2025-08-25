@@ -6,7 +6,7 @@ public class NextStageTrigger1 : MonoBehaviour, IInteractable
 {
     public void Interact()
     {
-        SceneLoader.Instance.LoadSceneAdditive("EningScene", true);
+        SceneLoader.Instance.LoadSceneAdditive("EndingScene", true);
     }
 }
 
