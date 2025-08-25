@@ -2,6 +2,8 @@
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.SceneManagement;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 
 [RequireComponent(typeof(NavMeshAgent))]
@@ -131,6 +133,19 @@ public class EnemyPlayerAttack : MonoBehaviour
         else
         {
             Debug.LogWarning("카메라를 못찾는다");
+        }
+
+        // 렌즈 왜곡 효과 추가
+        if (mapManager.volume.profile.TryGet<LensDistortion>(out var lensDistortion))
+        {
+            lensDistortion.intensity.Override(0.2f);
+            lensDistortion.scale.Override(1.1f);
+        }
+        else
+        {
+            var newLensDistortion = mapManager.volume.profile.Add<LensDistortion>(true);
+            newLensDistortion.intensity.Override(0.2f);
+            newLensDistortion.scale.Override(1.1f);
         }
 
         mapManager.FadeIn(1.5f);
