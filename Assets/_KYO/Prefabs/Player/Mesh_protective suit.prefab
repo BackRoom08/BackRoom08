@@ -2337,6 +2337,7 @@ GameObject:
   - component: {fileID: 137541634294536949}
   - component: {fileID: 5068871651962221483}
   - component: {fileID: 1403299413586385614}
+  - component: {fileID: 2553300141435114654}
   m_Layer: 8
   m_Name: Mesh_protective suit
   m_TagString: Player
@@ -2639,6 +2640,21 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 128
   enemyTag: Enemy
+--- !u!114 &2553300141435114654
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8331182571979421920}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26ff3a7dc9980324590a48b80b2b544f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cam: {fileID: 0}
+  interactRange: 3
+  generatorTag: Generator
 --- !u!1 &8402122624725235503
 GameObject:
   m_ObjectHideFlags: 0
