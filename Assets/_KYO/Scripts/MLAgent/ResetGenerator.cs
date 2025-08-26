@@ -18,6 +18,15 @@ public class ResetGenerator : MonoBehaviour
         _stack = 0;
     }
 
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.F9))
+        {
+            allClear();
+        }
+        
+    }
+
     public void AddStack(Generator g)
     {
         _stack++;
@@ -34,4 +43,15 @@ public class ResetGenerator : MonoBehaviour
         }
     }
 
+    public void allClear()
+    {
+        if (doorTrigger != null)
+            doorTrigger.Interact();
+
+        if (lightListOnOff != null)
+            lightListOnOff.SetLights(true);
+            
+        RenderSettings.fogEndDistance = 30f;
+    }
+    
 }
