@@ -147,8 +147,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   animator: {fileID: 3913863852818500121}
   isDoorOpen: 0
-  openSound: {fileID: 8300000, guid: 4bb5dfc429158dd41bde5cd95165949f, type: 3}
-  closeSound: {fileID: 8300000, guid: f01bb8bc2fac2b144af406e1a3089bc1, type: 3}
+  openSound: {fileID: 8300000, guid: 5d6b7e0082ceef44a993deb122909df8, type: 3}
+  closeSound: {fileID: 8300000, guid: 5ef9405429fcadb4da744e39aa531714, type: 3}
 --- !u!114 &5193635991025622621
 MonoBehaviour:
   m_ObjectHideFlags: 0
